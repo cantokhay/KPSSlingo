@@ -1,0 +1,20 @@
+{
+  "name": "kpsslingo-backend",
+  "version": "1.0.0",
+  "description": "Backend scripts for KPSSlingo",
+  "main": "index.js",
+  "scripts": {
+    "generate:questions": "ts-node scripts/generate-questions.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.0",
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.3"
+  }
+}
