@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/* ── Ana Renk Tanımları ─────────────────────────────────────────────────── */
+:root {
+  /* Surface */
+  --background: #FFFFFF;
+  --foreground: #0F172A;
+  --surface: #FFFFFF;
+  --surface-alt: #F5F7FF;
+  --surface-muted: #EDF0FF;
+
+  /* Ink / Typography */
+  --ink-primary: #0F172A;
+  --ink-secondary: #64748B;
+  --ink-disabled: #CBD5E1;
+
+  /* Brand */
+  --brand-primary: #1A3DE4;
+  --brand-light: #4F6FFF;
+  --brand-accent: #FF6B35;
+
+  /* Semantic */
+  --semantic-success: #22C55E;
+  --semantic-error: #EF4444;
+  --semantic-warning: #F59E0B;
+}
+
+/* ── Dark Mode Overrides ────────────────────────────────────────────────── */
+.dark {
+  --background: #0F1117;
+  --foreground: #F1F5F9;
+  
+  --surface: #1A1D27;
+  --surface-alt: #0F1117;
+  --surface-muted: #252836;
+
+  --ink-primary: #F1F5F9;
+  --ink-secondary: #94A3B8;
+  --ink-disabled: #475569;
+}
+
+/* ── Tailwind v4 Theme Configuration ────────────────────────────────────── */
+@theme {
+  /* Brand */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-light: var(--brand-light);
+  --color-brand-accent: var(--brand-accent);
+
+  /* Surface / Backgrounds */
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-surface-muted: var(--surface-muted);
+
+  /* Typography / Ink */
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-disabled: var(--ink-disabled);
+
+  /* Semantic */
+  --color-semantic-success: var(--semantic-success);
+  --color-semantic-error: var(--semantic-error);
+  --color-semantic-warning: var(--semantic-warning);
+
+  /* Borders & Radius */
+  --radius-card: 12px;
+  --radius-pill: 100px;
+  
+  /* Fonts */
+  --font-sans: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* ── Base Styles ────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    transition-property: background-color, color, border-color;
+    transition-duration: 0.3s;
+    transition-timing-function: ease;
+  }
+}
+
+/* ── Scrollbar Styling ──────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ink-disabled);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-secondary);
+}
