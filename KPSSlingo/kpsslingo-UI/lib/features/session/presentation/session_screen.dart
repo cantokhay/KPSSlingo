@@ -130,7 +130,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> with SingleTicker
                     ),
                   SessionPhase.submitting => const _SubmittingView(key: ValueKey('submitting')),
                   SessionPhase.error      => _ErrorView(
-                      key: ValueKey('error'),
+                      key: const ValueKey('error'),
                       message: sessionState.errorMessage ?? 'Bir hata oluştu.',
                       lessonId: widget.lessonId,
                     ),
@@ -389,7 +389,7 @@ class _ErrorView extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.textSecondary),
+            const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.textSecondary),
             Gaps.md,
             Text(message, style: AppTextStyles.bodyLarge, textAlign: TextAlign.center),
             Gaps.lg,

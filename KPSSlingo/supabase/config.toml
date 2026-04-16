@@ -224,14 +224,31 @@ otp_length = 6
 otp_expiry = 3600
 
 # Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
+[auth.email.smtp]
+enabled = false
 # host = "smtp.sendgrid.net"
 # port = 587
 # user = "apikey"
 # pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+admin_email = "destek@kpsslingo.com"
+sender_name = "KPSSlingo"
+
+# Custom Email Templates
+[auth.email.template.confirmation]
+subject = "KPSSlingo'ya Hoş Geldin! 👋"
+content_path = "./templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Şifre Sıfırlama İsteği 🔐"
+content_path = "./templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Hızlı Giriş Bağlantısı 🚀"
+content_path = "./templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "E-posta Değişikliği Onayı 📧"
+content_path = "./templates/email_change.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

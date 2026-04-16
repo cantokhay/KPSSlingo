@@ -73,7 +73,7 @@ class DailyQuestCard extends ConsumerWidget {
             ),
           ),
           if (progress >= 1.0)
-            Icon(Icons.check_circle_rounded, color: AppColors.success, size: 28)
+            const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 28)
           else
              const Text('🏃', style: TextStyle(fontSize: 20)),
         ],

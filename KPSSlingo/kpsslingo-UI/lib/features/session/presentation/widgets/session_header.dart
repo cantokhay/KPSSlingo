@@ -28,9 +28,9 @@ class SessionHeader extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: () {
-                  // PopScope handle eder
+                  Navigator.of(context).maybePop();
                 },
-                icon: Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -50,7 +50,7 @@ class SessionHeader extends StatelessWidget {
                       value: value,
                       minHeight: 10,
                       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                      valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                     ),
                   ),
                 ),

@@ -245,7 +245,7 @@ class _LeaderboardTile extends StatelessWidget {
             backgroundColor: AppColors.primary.withOpacity(0.15),
             child: Text(
               entry.username.substring(0, 1).toUpperCase(),
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w900,
                 fontSize: 14,

@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
@@ -171,14 +170,14 @@ class _FeedbackBottomBannerState extends ConsumerState<FeedbackBottomBanner>
                     ),
                     child: Text(
                       _deepDiveText!,
-                      style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
+                      style: AppTextStyles.bodyMedium.copyWith(height: 1.5, color: Colors.black87),
                     ),
                   ),
                   Gaps.md,
                 ] else if (widget.explanation != null) ...[
                   Text(
                     widget.explanation!,
-                    style: AppTextStyles.bodyLarge.copyWith(height: 1.4),
+                    style: AppTextStyles.bodyLarge.copyWith(height: 1.4, color: Colors.black87),
                   ),
                   Gaps.md,
                   TextButton.icon(

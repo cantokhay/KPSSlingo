@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:confetti/confetti.dart';
 
-import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
 import 'package:kpsslingo/core/theme/gaps.dart';
 import '../../session/models/complete_lesson_result.dart';

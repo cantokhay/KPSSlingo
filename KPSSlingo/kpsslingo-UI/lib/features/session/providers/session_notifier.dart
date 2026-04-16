@@ -41,8 +41,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
           .select('*, question_options(*)')
           .eq('lesson_id', lessonId)
           .eq('status', 'published')
-          .order('created_at')
-          .limit(10);
+          .order('created_at');
 
       final questions = (data as List)
           .map((e) => QuestionWithOptions.fromJson(e as Map<String, dynamic>))

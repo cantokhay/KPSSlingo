@@ -166,7 +166,7 @@ class _StreakBannerCardState extends State<_StreakBannerCard>
           Gaps.h(12),
 
           // ── Alt: XP Progress ───────────────────────────────────────────────
-          _XpProgressBar(
+          const _XpProgressBar(
             current: _currentDailyXp,
             goal: _dailyGoalXp,
           ),
@@ -215,9 +215,7 @@ class _WeeklyStreakCalendar extends StatelessWidget {
     final last7 = List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
 
     // Kaç gün active: currentStreak kadar son günden geriye say
-    final activeFrom = lastActivity != null
-        ? lastActivity!.subtract(Duration(days: currentStreak - 1))
-        : null;
+    final activeFrom = lastActivity?.subtract(Duration(days: currentStreak - 1));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,

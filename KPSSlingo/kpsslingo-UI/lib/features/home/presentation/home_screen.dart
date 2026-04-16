@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/home_data_provider.dart';
 import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
@@ -28,14 +27,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: _buildAppBar(context),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(homeDataProvider),
-        child: CustomScrollView(
+        child: const CustomScrollView(
           slivers: [
             // 1. Streak Banner
-            const SliverToBoxAdapter(child: StreakBannerSection()),
+            SliverToBoxAdapter(child: StreakBannerSection()),
             SliverToBoxAdapter(child: Gaps.md),
             
             // 2. Günlük Görev
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: AppDimensions.pageHorizontalPadding),
                 child: DailyQuestCard(),
@@ -44,16 +43,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             SliverToBoxAdapter(child: Gaps.md),
 
             // 3. Devam Et CTA
-            const SliverToBoxAdapter(child: ContinueLessonSection()),
+            SliverToBoxAdapter(child: ContinueLessonSection()),
             SliverToBoxAdapter(child: Gaps.md),
             SliverToBoxAdapter(child: Gaps.lg),
 
             // 3. Konu Haritası Başlığı
-            const SliverToBoxAdapter(child: _SectionHeader(title: 'Konu Haritası')),
+            SliverToBoxAdapter(child: _SectionHeader(title: 'Konu Haritası')),
             SliverToBoxAdapter(child: Gaps.sm),
 
             // 4. Konu Kartları Listesi
-            const TopicListSection(),
+            TopicListSection(),
 
             // 5. Alt boşluk
             SliverToBoxAdapter(

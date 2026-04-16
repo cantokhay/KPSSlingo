@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/data/models/user_profile.dart';
 import '../data/models/lesson.dart';
@@ -119,12 +118,16 @@ final nextLessonProvider = FutureProvider.autoDispose<Lesson?>((ref) async {
 
   final allLessons = await supabase
       .from('lessons')
-      .select()
+      .select('*, questions(count)')
       .eq('status', 'published')
+      .eq('questions.status', 'published')
       .order('order');
 
   final nextLessons = (allLessons as List)
-      .where((l) => !completedIds.contains(l['id']))
+      .where((l) {
+        final quesCount = (l['questions'] as List).isNotEmpty ? l['questions'][0]['count'] as int : 0;
+        return !completedIds.contains(l['id']) && quesCount > 0;
+      })
       .toList();
 
   if (nextLessons.isEmpty) return null;

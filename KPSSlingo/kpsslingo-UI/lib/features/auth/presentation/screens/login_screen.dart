@@ -77,7 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Gaps.xxl,
-                  Icon(Icons.school_rounded, size: 80, color: AppColors.primary),
+                  const Icon(Icons.school_rounded, size: 80, color: AppColors.primary),
                   Gaps.lg,
                   Text(
                     'Tekrar Hoş Geldin!',
@@ -96,7 +96,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     onFieldSubmitted: (_) => _onLogin(),
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'E-posta',
                       prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
                     ),
@@ -107,7 +107,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _passwordController,
                     obscureText: true,
                     onFieldSubmitted: (_) => _onLogin(),
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Şifre',
                       prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.primary),
                     ),

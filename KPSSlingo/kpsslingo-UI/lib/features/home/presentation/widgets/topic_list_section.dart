@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/home_providers.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
-import 'package:kpsslingo/core/theme/gaps.dart';
 import 'package:kpsslingo/shared/widgets/skeleton.dart';
 import 'topic_card.dart';
 import 'mistake_review_card.dart';
@@ -57,9 +56,9 @@ class _TopicListSkeleton extends StatelessWidget {
       child: Column(
         children: List.generate(
           5,
-          (index) => Padding(
-            padding: const EdgeInsets.only(bottom: AppDimensions.sm),
-            child: const SkeletonBox(
+          (index) => const Padding(
+            padding: EdgeInsets.only(bottom: AppDimensions.sm),
+            child: SkeletonBox(
               width: double.infinity,
               height: 76,
               radius: AppDimensions.radiusMd,

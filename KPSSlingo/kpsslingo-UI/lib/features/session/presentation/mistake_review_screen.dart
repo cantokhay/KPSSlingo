@@ -231,7 +231,7 @@ class _AIAnalysisSheetState extends ConsumerState<_AIAnalysisSheet> {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome_rounded, color: AppColors.primary),
+              const Icon(Icons.auto_awesome_rounded, color: AppColors.primary),
               Gaps.w(AppDimensions.sm),
               Text('Mini Analiz', style: AppTextStyles.titleLarge),
               const Spacer(),
@@ -288,7 +288,7 @@ class _ReviewCompleteView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_circle_outline_rounded, size: 80, color: AppColors.success),
+          const Icon(Icons.check_circle_outline_rounded, size: 80, color: AppColors.success),
           Gaps.lg,
           Text('Harika!', style: AppTextStyles.headlineMedium),
           Text('Hatalarını temizledin.', style: AppTextStyles.bodyLarge),

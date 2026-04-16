@@ -6,6 +6,7 @@ import 'core/theme/app_theme_dark.dart';
 import 'core/router.dart';
 import 'core/providers/theme_provider.dart';
 
+import 'core/local/isar_service.dart';
 import 'core/app_constants.dart';
 
 Future<void> main() async {
@@ -15,6 +16,9 @@ Future<void> main() async {
     url: AppConstants.supabaseUrl,
     anonKey: AppConstants.supabaseAnonKey,
   );
+
+  // Initialize Local DB (Isar)
+  await IsarService.instance.init();
 
   runApp(
     const ProviderScope(

@@ -73,10 +73,10 @@ class SearchScreen extends ConsumerWidget {
               return Card(
                 elevation: 0,
                 child: ListTile(
-                  leading: Icon(Icons.play_circle_outline_rounded, color: AppColors.primary),
+                  leading: const Icon(Icons.play_circle_outline_rounded, color: AppColors.primary),
                   title: Text(lesson.title, style: AppTextStyles.labelBold),
                   subtitle: Text('${lesson.xpReward} XP', style: AppTextStyles.bodySmall),
-                  trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
                   onTap: () => context.push('/lesson/${lesson.id}'),
                 ),
               );

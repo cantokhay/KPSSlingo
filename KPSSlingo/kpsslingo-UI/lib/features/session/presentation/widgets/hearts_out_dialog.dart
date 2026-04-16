@@ -69,7 +69,7 @@ class HeartsOutDialog extends ConsumerWidget {
             
             TextButton(
               onPressed: () => context.go('/home'),
-              child: Text(
+              child: const Text(
                 'Dinlenmeye Çık',
                 style: TextStyle(color: AppColors.textSecondary),
               ),

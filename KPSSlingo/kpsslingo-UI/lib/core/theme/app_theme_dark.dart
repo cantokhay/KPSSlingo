@@ -78,7 +78,7 @@ ThemeData get appDarkTheme => ThemeData(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-      borderSide: BorderSide(color: AppColors.primary, width: 2),
+      borderSide: const BorderSide(color: AppColors.primary, width: 2),
     ),
     labelStyle: const TextStyle(color: AppColorsDark.textSecondary),
   ),

@@ -41,7 +41,7 @@ class MistakeReviewCard extends ConsumerWidget {
                           color: AppColors.error.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.auto_fix_high_rounded, color: AppColors.error),
+                        child: const Icon(Icons.auto_fix_high_rounded, color: AppColors.error),
                       ),
                       Gaps.w(AppDimensions.md),
                       Expanded(
@@ -59,7 +59,7 @@ class MistakeReviewCard extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.error),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.error),
                     ],
                   ),
                 ),

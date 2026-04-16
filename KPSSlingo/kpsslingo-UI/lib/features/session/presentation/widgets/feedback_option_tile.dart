@@ -35,12 +35,12 @@ class FeedbackOptionTile extends StatelessWidget {
       borderColor = AppColors.success;
       bgColor     = AppColors.success.withOpacity(0.08);
       labelColor  = AppColors.success;
-      trailingIcon = Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20);
+      trailingIcon = const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20);
     } else if (isWrongPick) {
       borderColor = AppColors.error;
       bgColor     = AppColors.error.withOpacity(0.08);
       labelColor  = AppColors.error;
-      trailingIcon = Icon(Icons.cancel_rounded, color: AppColors.error, size: 20);
+      trailingIcon = const Icon(Icons.cancel_rounded, color: AppColors.error, size: 20);
     }
 
     return AnimatedContainer(

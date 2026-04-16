@@ -4,8 +4,8 @@ import 'package:kpsslingo/features/auth/providers/auth_provider.dart';
 import 'package:kpsslingo/features/home/providers/home_providers.dart';
 import '../providers/supabase_provider.dart';
 
-const int kMaxHearts = 10;
-const int kRegenIntervalMinutes = 15;
+const int kMaxHearts = 15;
+const int kRegenIntervalSeconds = 15;
 const int kRefillXpCost = 500;
 
 class HeartsState {
@@ -42,7 +42,7 @@ class HeartsNotifier extends StateNotifier<HeartsState?> {
 
   void _init() {
     ref.listen(userProfileProvider, (previous, next) {
-      if (next is AsyncValue && next.hasValue && next.value != null) {
+      if (next.hasValue && next.value != null) {
         final profile = next.value!;
         _updateState(profile.hearts, profile.lastHeartRegen);
         _startTimer();
@@ -58,10 +58,10 @@ class HeartsNotifier extends StateNotifier<HeartsState?> {
     DateTime newLastRegen = lastRegen;
     
     if (newHearts < kMaxHearts) {
-      final additionalHearts = diff.inMinutes ~/ kRegenIntervalMinutes;
+      final additionalHearts = diff.inSeconds ~/ kRegenIntervalSeconds;
       if (additionalHearts > 0) {
         newHearts = (newHearts + additionalHearts).clamp(0, kMaxHearts);
-        newLastRegen = lastRegen.add(Duration(minutes: additionalHearts * kRegenIntervalMinutes));
+        newLastRegen = lastRegen.add(Duration(seconds: additionalHearts * kRegenIntervalSeconds));
         
         if (newHearts == kMaxHearts) {
           newLastRegen = now;
@@ -74,7 +74,7 @@ class HeartsNotifier extends StateNotifier<HeartsState?> {
 
     Duration timeUntilNext = Duration.zero;
     if (newHearts < kMaxHearts) {
-      final nextRegen = newLastRegen.add(const Duration(minutes: kRegenIntervalMinutes));
+      final nextRegen = newLastRegen.add(const Duration(seconds: kRegenIntervalSeconds));
       timeUntilNext = nextRegen.difference(now);
     }
 

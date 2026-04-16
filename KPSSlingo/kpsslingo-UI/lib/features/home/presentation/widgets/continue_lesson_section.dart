@@ -121,7 +121,7 @@ class _FirstLessonPrompt extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.rocket_launch, color: AppColors.primary, size: 32),
+          const Icon(Icons.rocket_launch, color: AppColors.primary, size: 32),
           Gaps.w(AppDimensions.md),
           Expanded(
             child: Column(

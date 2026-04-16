@@ -20,6 +20,7 @@ import 'package:kpsslingo/features/session/presentation/mistake_review_screen.da
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  ref.watch(userProfileProvider); // Watch profile to trigger redirect when loaded
 
   return GoRouter(
     initialLocation: '/home',
@@ -125,11 +126,11 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             case 3: context.go('/profile'); break;
           }
         },
-        items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Ana Sayfa'),
-          const BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Arama'),
-          const BottomNavigationBarItem(icon: Icon(Icons.leaderboard_rounded), label: 'Sıralama'),
-          const BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profil'),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Ana Sayfa'),
+          BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Arama'),
+          BottomNavigationBarItem(icon: Icon(Icons.leaderboard_rounded), label: 'Sıralama'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profil'),
         ],
       ),
     );

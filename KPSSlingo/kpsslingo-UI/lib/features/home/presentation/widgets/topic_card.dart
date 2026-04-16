@@ -190,7 +190,7 @@ class _LessonItems extends StatelessWidget {
       itemBuilder: (context, index) {
         final lesson = lessons[index];
         return InkWell(
-          onTap: () => context.push('/session/${lesson.id}'),
+          onTap: () => context.push('/lesson/${lesson.id}'),
           borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: AppDimensions.md, vertical: AppDimensions.sm),

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>KPSSlingo'ya Hoş Geldin!</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; }
+        .header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #6366f1; }
+        .content { padding: 20px 0; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #6366f1; color: #ffffff !important; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .footer { font-size: 12px; color: #777; text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="color: #6366f1;">KPSSlingo</h1>
+        </div>
+        <div class="content">
+            <h2>Hoş geldin!</h2>
+            <p>KPSS yolculuğunda seni aramızda gördüğümüz için çok mutluyuz. Hesabını aktifleştirmek ve hemen öğrenmeye başlamak için aşağıdaki butona tıkla:</p>
+            <p style="text-align: center;">
+                <a href="{{ .ConfirmationURL }}" class="button">Hesabımı Onayla</a>
+            </p>
+            <p>Eğer butona tıklayamıyorsan şu bağlantıyı tarayıcına yapıştırabilirsin:</p>
+            <p style="word-break: break-all; font-size: 11px; color: #666;">{{ .ConfirmationURL }}</p>
+        </div>
+        <div class="footer">
+            <p>Bu e-postayı KPSSlingo'ya kayıt olduğun için aldın. Eğer bu işlemi sen yapmadıysan lütfen bu maili görmezden gel.</p>
+            <p>&copy; 2026 KPSSlingo - Başarılar Dileriz!</p>
+        </div>
+    </div>
+</body>
+</html>

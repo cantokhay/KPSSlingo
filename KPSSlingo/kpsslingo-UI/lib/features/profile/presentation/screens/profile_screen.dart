@@ -32,12 +32,24 @@ class ProfileScreen extends ConsumerWidget {
                   error: (e, __) => Text('Hata: $e'),
                 ),
                 Gaps.xl,
-                const _MenuSection(
+                _MenuSection(
                   title: 'Hesap Ayarları',
                   items: [
-                    _MenuItem(icon: Icons.person_outline_rounded, label: 'Bilgilerimi Güncelle'),
-                    _MenuItem(icon: Icons.notifications_none_rounded, label: 'Bildirimler'),
-                    _MenuItem(icon: Icons.security_rounded, label: 'Güvenlik'),
+                    _MenuItem(
+                      icon: Icons.person_outline_rounded, 
+                      label: 'Bilgilerimi Güncelle',
+                      onTap: () => _showComingSoon(context, 'Profil Güncelleme'),
+                    ),
+                    _MenuItem(
+                      icon: Icons.notifications_none_rounded, 
+                      label: 'Bildirimler',
+                      onTap: () => _showComingSoon(context, 'Bildirim Ayarları'),
+                    ),
+                    _MenuItem(
+                      icon: Icons.security_rounded, 
+                      label: 'Güvenlik',
+                      onTap: () => _showComingSoon(context, 'Güvenlik Ayarları'),
+                    ),
                   ],
                 ),
                 Gaps.lg,
@@ -45,9 +57,21 @@ class ProfileScreen extends ConsumerWidget {
                   title: 'Uygulama',
                   items: [
                     const _DarkModeToggle(),
-                    const _MenuItem(icon: Icons.star_outline_rounded, label: 'Uygulamayı Puanla'),
-                    const _MenuItem(icon: Icons.help_outline_rounded, label: 'Yardım & Destek'),
-                    const _MenuItem(icon: Icons.info_outline_rounded, label: 'Hakkımızda'),
+                    _MenuItem(
+                      icon: Icons.star_outline_rounded, 
+                      label: 'Uygulamayı Puanla',
+                      onTap: () => _showComingSoon(context, 'Puanlama'),
+                    ),
+                    _MenuItem(
+                      icon: Icons.help_outline_rounded, 
+                      label: 'Yardım & Destek',
+                      onTap: () => _showComingSoon(context, 'Destek'),
+                    ),
+                    _MenuItem(
+                      icon: Icons.info_outline_rounded, 
+                      label: 'Hakkımızda',
+                      onTap: () => _showComingSoon(context, 'Hakkımızda'),
+                    ),
                   ],
                 ),
                 Gaps.xxl,
@@ -103,6 +127,16 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showComingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature yakında sizlerle!'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.primary,
       ),
     );
   }
@@ -229,15 +263,20 @@ class _MenuSection extends StatelessWidget {
 class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _MenuItem({required this.icon, required this.label});
+  final VoidCallback onTap;
+  const _MenuItem({
+    required this.icon, 
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(icon, color: AppColors.textSecondary, size: 22),
       title: Text(label, style: AppTextStyles.bodyLarge),
-      trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-      onTap: () {},
+      trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+      onTap: onTap,
     );
   }
 }
