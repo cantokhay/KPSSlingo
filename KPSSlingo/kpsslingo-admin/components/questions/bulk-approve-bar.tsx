@@ -12,6 +12,7 @@ interface Question {
   created_at: string
   source: string
   ai_review_score: number | null
+  difficulty_score: number | null
   explanation: string | null
   lessons?: {
     title: string
@@ -33,9 +34,9 @@ export function BulkApproveBar({ questions }: BulkApproveBarProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
 
-  // Sadece draft/draft_flagged olanlar seçilebilir
+  // draft, draft_flagged, pending_ai_review veya ai_rejected olanlar seçilebilir
   const approvableQuestions = questions.filter(
-    (q) => q.status === 'draft' || q.status === 'draft_flagged'
+    (q) => q.status === 'draft' || q.status === 'draft_flagged' || q.status === 'pending_ai_review' || q.status === 'ai_rejected'
   )
   const allSelected =
     approvableQuestions.length > 0 &&
@@ -156,6 +157,7 @@ export function BulkApproveBar({ questions }: BulkApproveBarProps) {
 import Link from 'next/link'
 import { ApproveButton } from './approve-button'
 import { ScoreBadge } from './score-badge'
+import { DifficultyBadge } from './difficulty-badge'
 import { QuestionPreviewPopover } from './question-preview-popover'
 
 function BulkQuestionListView({
@@ -180,7 +182,7 @@ function BulkQuestionListView({
   return (
     <div className="grid gap-3">
       {questions.map((q) => {
-        const isApprovable = q.status === 'draft' || q.status === 'draft_flagged'
+        const isApprovable = q.status === 'draft' || q.status === 'draft_flagged' || q.status === 'pending_ai_review' || q.status === 'ai_rejected'
         const isSelected = selectedIds.has(q.id)
 
         return (
@@ -227,12 +229,18 @@ function BulkQuestionListView({
                     ⚠ AI DİKKAT
                   </span>
                 )}
+                {q.status === 'pending_ai_review' && (
+                  <span className="text-[10px] font-extrabold text-[#3B82F6] bg-[#DBEAFE] px-2 py-0.5 rounded-full uppercase tracking-wider border border-[#93C5FD]">
+                    ⌛ AI İNCELEME
+                  </span>
+                )}
                 {q.status === 'published' && (
                   <span className="text-[10px] font-extrabold text-semantic-success bg-semantic-success/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
                     ✓ Yayınlandı
                   </span>
                 )}
                 <ScoreBadge score={q.ai_review_score} />
+                <DifficultyBadge score={q.difficulty_score} />
               </div>
 
               <h3 className="text-sm font-semibold text-ink-primary line-clamp-2 leading-relaxed">
@@ -252,6 +260,7 @@ function BulkQuestionListView({
                 body={q.body}
                 explanation={q.explanation}
                 options={q.question_options}
+                correctOption={q.correct_option}
                 trigger={
                   <button
                     title="Önizle"

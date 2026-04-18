@@ -5,7 +5,7 @@ import 'package:kpsslingo/features/home/providers/home_providers.dart';
 import '../providers/supabase_provider.dart';
 
 const int kMaxHearts = 15;
-const int kRegenIntervalSeconds = 15;
+const int kRegenIntervalSeconds = 30;
 const int kRefillXpCost = 500;
 
 class HeartsState {
@@ -51,17 +51,20 @@ class HeartsNotifier extends StateNotifier<HeartsState?> {
   }
 
   void _updateState(int hearts, DateTime lastRegen) {
-    final now = DateTime.now();
-    final diff = now.difference(lastRegen);
+    final now = DateTime.now().toUtc();
+    final lastRegenUtc = lastRegen.toUtc();
+    
+    // Eğer sunucu saati cihaz saatinden ilerideyse diff negatif olabilir
+    final diff = now.isBefore(lastRegenUtc) ? Duration.zero : now.difference(lastRegenUtc);
     
     int newHearts = hearts;
-    DateTime newLastRegen = lastRegen;
+    DateTime newLastRegen = lastRegenUtc;
     
     if (newHearts < kMaxHearts) {
       final additionalHearts = diff.inSeconds ~/ kRegenIntervalSeconds;
       if (additionalHearts > 0) {
         newHearts = (newHearts + additionalHearts).clamp(0, kMaxHearts);
-        newLastRegen = lastRegen.add(Duration(seconds: additionalHearts * kRegenIntervalSeconds));
+        newLastRegen = lastRegenUtc.add(Duration(seconds: additionalHearts * kRegenIntervalSeconds));
         
         if (newHearts == kMaxHearts) {
           newLastRegen = now;
@@ -76,6 +79,12 @@ class HeartsNotifier extends StateNotifier<HeartsState?> {
     if (newHearts < kMaxHearts) {
       final nextRegen = newLastRegen.add(const Duration(seconds: kRegenIntervalSeconds));
       timeUntilNext = nextRegen.difference(now);
+      
+      // Süre negatifse veya intervalden fazlaysa düzelt (UI glitch önleyici)
+      if (timeUntilNext.isNegative) timeUntilNext = Duration.zero;
+      if (timeUntilNext.inSeconds > kRegenIntervalSeconds) {
+        timeUntilNext = Duration(seconds: kRegenIntervalSeconds);
+      }
     }
 
     state = HeartsState(

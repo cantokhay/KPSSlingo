@@ -1,0 +1,95 @@
+// components/dashboard/charts/difficulty-distribution-chart.tsx
+"use client";
+
+import React, { useState, useEffect } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+
+interface DifficultyDistributionChartProps {
+  data: { range: string; count: number }[];
+}
+
+// Zorluk skoruna göre sınav uygunluğunu belirten renkler
+const getDifficultyColor = (range: string) => {
+  if (range.includes("Ortaöğretim")) return "#4CAF50"; // Yeşil
+  if (range.includes("Önlisans")) return "#FFA500"; // Turuncu
+  if (range.includes("Lisans")) return "#FF4D4D"; // Kırmızı
+  return "#1A73E8"; // Mavi (Default)
+};
+
+export function DifficultyDistributionChart({
+  data,
+}: DifficultyDistributionChartProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) return <div className="h-[240px] w-full" />;
+
+  return (
+    <div className="h-[240px] w-full mt-4 block relative">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <BarChart
+          data={data}
+          margin={{ top: 10, right: 10, left: -20, bottom: 20 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+            stroke="currentColor"
+            className="text-ink-disabled/10"
+          />
+          <XAxis
+            dataKey="range"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 10, fontWeight: 700, fill: "currentColor" }}
+            className="text-ink-disabled"
+            angle={-15}
+            textAnchor="end"
+            interval={0}
+            height={40}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 10, fontWeight: 700, fill: "currentColor" }}
+            className="text-ink-disabled"
+          />
+          <Tooltip
+            cursor={{ fill: "var(--brand-primary)", opacity: 0.05 }}
+            contentStyle={{
+              borderRadius: "16px",
+              border: "1px solid var(--ink-disabled-alpha-10, rgba(148, 163, 184, 0.1))",
+              backgroundColor: "var(--surface)",
+              boxShadow: "0 10px 25px -5px rgba(0,0,0,0.2)",
+              fontSize: "11px",
+              fontWeight: 700,
+              padding: "8px 12px",
+            }}
+            itemStyle={{ color: "var(--ink-primary)", padding: "2px 0" }}
+            labelStyle={{ color: "var(--ink-secondary)", marginBottom: "4px" }}
+          />
+          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={getDifficultyColor(entry.range)}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}

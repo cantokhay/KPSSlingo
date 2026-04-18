@@ -42,7 +42,7 @@ final userProfileProvider = FutureProvider.autoDispose<UserProfile?>((ref) async
 
   final data = await supabase
       .from('user_profiles')
-      .select('id, username, full_name, avatar_url, total_xp, current_level, onboarding_complete, hearts, last_heart_regen')
+      .select('id, username, full_name, avatar_url, total_xp, current_level, onboarding_complete, hearts, last_heart_regen, target_exam')
       .eq('id', user.id)
       .single();
   return UserProfile.fromJson(data);
@@ -166,7 +166,7 @@ final topicProgressProvider = FutureProvider.autoDispose
   return completedCount / totalCount;
 });
 
-// 7. Günlük Görev (3 Ders Tamamla)
+// 7. Günlük Görev (3 Farklı Ders Tamamla/Tekrarla)
 final dailyQuestProvider = FutureProvider.autoDispose<int>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return 0;
@@ -175,12 +175,52 @@ final dailyQuestProvider = FutureProvider.autoDispose<int>((ref) async {
   final today = DateTime.now();
   final startOfDay = DateTime(today.year, today.month, today.day);
 
-  final completedToday = await supabase
-      .from('user_progress')
+  // Bugün soru çözülen benzersiz derslerin sayısını al
+  final response = await supabase
+      .from('user_question_answers')
+      .select('lesson_id')
+      .eq('user_id', user.id)
+      .gte('answered_at', startOfDay.toIso8601String());
+
+  final lessonIds = (response as List).map((e) => e['lesson_id'] as String).toSet();
+  return lessonIds.length;
+});
+
+// 8. Günlük XP (Bugün Kazanılan)
+final dailyXpProvider = FutureProvider.autoDispose<int>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return 0;
+  final supabase = ref.watch(supabaseClientProvider);
+
+  final today = DateTime.now();
+  final startOfDay = DateTime(today.year, today.month, today.day);
+
+  // Bugün tamamlanan derslerden gelen XP'leri topla
+  // Basitlik için her ders 10 XP diyelim (xp_reward veritabanında var ama 
+  // her soru çözümü için de puan verilebilir).
+  // Mevcut yapıda user_question_answers sayısına göre hesaplayalım.
+  final response = await supabase
+      .from('user_question_answers')
       .select('id')
       .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .gte('completed_at', startOfDay.toIso8601String());
+      .eq('is_correct', true)
+      .gte('answered_at', startOfDay.toIso8601String());
 
-  return (completedToday as List).length;
+  // Her doğru cevap 2 XP
+  return (response as List).length * 2;
+});
+
+// 8. Tamamlanan Ders ID'leri (Checkmark için)
+final completedLessonIdsProvider = FutureProvider.autoDispose<List<String>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return [];
+  final supabase = ref.watch(supabaseClientProvider);
+
+  final data = await supabase
+      .from('user_progress')
+      .select('lesson_id')
+      .eq('user_id', user.id)
+      .eq('status', 'completed');
+
+  return (data as List).map((e) => e['lesson_id'] as String).toList();
 });

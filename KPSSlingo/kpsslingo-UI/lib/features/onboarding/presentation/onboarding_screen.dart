@@ -19,6 +19,14 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _controller = PageController();
   bool _isLastPage = false;
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 90)); // Default fallback
+  bool _dateInitialized = false;
+
+  final Map<String, DateTime> _defaultExamDates = {
+    'lisans': DateTime(2026, 7, 20),
+    'onlisans': DateTime(2026, 9, 5),
+    'ortaogretim': DateTime(2026, 10, 18),
+  };
 
   final List<_OnboardingData> _pages = [
     _OnboardingData(
@@ -43,16 +51,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          PageView.builder(
+          PageView(
             controller: _controller,
-            itemCount: _pages.length,
             onPageChanged: (index) {
-              setState(() => _isLastPage = index == _pages.length - 1);
+              setState(() => _isLastPage = index == _pages.length);
             },
-            itemBuilder: (context, index) => _OnboardingPage(data: _pages[index]),
+            children: [
+              ..._pages.map((p) => _OnboardingPage(data: p)),
+              _DateSelectionPage(
+                selectedDate: _selectedDate,
+                onDateChanged: (date) => setState(() => _selectedDate = date),
+              ),
+            ],
           ),
           
-          // Alt kısım: Indicator + Buton
           Positioned(
             bottom: 60,
             left: AppDimensions.pageHorizontalPadding,
@@ -61,7 +73,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               children: [
                 SmoothPageIndicator(
                   controller: _controller,
-                  count: _pages.length,
+                  count: _pages.length + 1,
                   effect: ExpandingDotsEffect(
                     activeDotColor: AppColors.primary,
                     dotColor: Theme.of(context).dividerColor.withOpacity(0.2),
@@ -77,10 +89,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       if (_isLastPage) {
-                        await ref.read(authNotifierProvider.notifier).completeOnboarding();
+                        await ref.read(authNotifierProvider.notifier).completeOnboarding(_selectedDate);
                         ref.invalidate(userProfileProvider);
                         if (mounted) context.go('/home');
                       } else {
+                        // Eğer son sayfaya (tarih seçimi) geçiyorsak, profil bilgisine göre tarihi init et
+                        if (_controller.page?.round() == _pages.length - 1 && !_dateInitialized) {
+                          final profile = ref.read(userProfileProvider).valueOrNull;
+                          if (profile != null) {
+                            setState(() {
+                              _selectedDate = _defaultExamDates[profile.targetExam] ?? _selectedDate;
+                              _dateInitialized = true;
+                            });
+                          }
+                        }
+                        
                         _controller.nextPage(
                           duration: const Duration(milliseconds: 500),
                           curve: Curves.easeInOut,
@@ -139,9 +162,106 @@ class _OnboardingPage extends StatelessWidget {
   }
 }
 
+class _DateSelectionPage extends StatelessWidget {
+  final DateTime selectedDate;
+  final Function(DateTime) onDateChanged;
+
+  const _DateSelectionPage({
+    required this.selectedDate,
+    required this.onDateChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dateStr = "${selectedDate.day} ${_getMonthName(selectedDate.month)} ${selectedDate.year}";
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 30),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Sınav Tarihin',
+            style: AppTextStyles.headlineLarge.copyWith(color: AppColors.primary),
+          ),
+          Gaps.sm,
+          Text(
+            'Hedefine ne kadar kaldığını takip edelim.\nSeçtiğin sınav türüne göre tahmini tarih ayarlandı.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          ),
+          Gaps.xxl,
+          
+          GestureDetector(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: selectedDate,
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: ColorScheme.fromSeed(
+                        seedColor: AppColors.primary,
+                        primary: AppColors.primary,
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (picked != null) onDateChanged(picked);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+                boxShadow: [
+                  BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 8))
+                ],
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.calendar_month_rounded, size: 48, color: AppColors.primary),
+                  Gaps.md,
+                  Text(
+                    dateStr,
+                    style: AppTextStyles.headlineMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                  ),
+                  Gaps.xs,
+                  Text(
+                    'Tarihi Değiştirmek İçin Dokun',
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textDisabled),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 140),
+        ],
+      ),
+    );
+  }
+
+  String _getMonthName(int month) {
+    const names = [
+      '', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    return names[month];
+  }
+}
+
+
+
 class _OnboardingData {
   final String title;
   final String description;
   final String icon;
   _OnboardingData({required this.title, required this.description, required this.icon});
 }
+

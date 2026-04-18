@@ -16,6 +16,7 @@ class StreakBannerSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final streakAsync   = ref.watch(streakProvider);
     final profileAsync  = ref.watch(userProfileProvider);
+    final dailyXpAsync   = ref.watch(dailyXpProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -25,6 +26,8 @@ class StreakBannerSection extends ConsumerWidget {
         data: (streak) => _StreakBannerCard(
           streak: streak,
           totalXp: profileAsync.valueOrNull?.totalXp ?? 0,
+          currentDailyXp: dailyXpAsync.valueOrNull ?? 0,
+          dailyGoal: 50, // Varsayılan hedef
         ),
         loading: () => const _StreakBannerSkeleton(),
         error: (_, __) => const SizedBox.shrink(),
@@ -37,8 +40,15 @@ class StreakBannerSection extends ConsumerWidget {
 class _StreakBannerCard extends StatefulWidget {
   final Streak? streak;
   final int totalXp;
+  final int currentDailyXp;
+  final int dailyGoal;
 
-  const _StreakBannerCard({this.streak, required this.totalXp});
+  const _StreakBannerCard({
+    this.streak, 
+    required this.totalXp,
+    required this.currentDailyXp,
+    required this.dailyGoal,
+  });
 
   @override
   State<_StreakBannerCard> createState() => _StreakBannerCardState();
@@ -48,10 +58,6 @@ class _StreakBannerCardState extends State<_StreakBannerCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _glowCtrl;
   late final Animation<double> _glowAnim;
-
-  // Demo XP — gerçek uygulamada user_progress'ten alınabilir
-  static const int _currentDailyXp = 17;
-  static const int _dailyGoalXp    = 20;
 
   @override
   void initState() {
@@ -166,9 +172,9 @@ class _StreakBannerCardState extends State<_StreakBannerCard>
           Gaps.h(12),
 
           // ── Alt: XP Progress ───────────────────────────────────────────────
-          const _XpProgressBar(
-            current: _currentDailyXp,
-            goal: _dailyGoalXp,
+          _XpProgressBar(
+            current: widget.currentDailyXp,
+            goal: widget.dailyGoal,
           ),
         ],
       ),

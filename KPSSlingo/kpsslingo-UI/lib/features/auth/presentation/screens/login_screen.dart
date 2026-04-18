@@ -80,7 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Icon(Icons.school_rounded, size: 80, color: AppColors.primary),
                   Gaps.lg,
                   Text(
-                    'Tekrar Hoş Geldin!',
+                    'Hoş Geldin!',
                     style: AppTextStyles.displayLarge.copyWith(color: AppColors.primary),
                     textAlign: TextAlign.center,
                   ),
@@ -100,7 +100,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       labelText: 'E-posta',
                       prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
                     ),
-                    validator: (v) => !v!.contains('@') ? 'Geçersiz e-posta' : null,
+                    validator: (v) {
+                      if (v == null || !v.contains('@') || !v.contains('.')) return 'Geçersiz e-posta';
+                      return null;
+                    },
                   ),
                   Gaps.md,
                   TextFormField(
@@ -111,7 +114,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       labelText: 'Şifre',
                       prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.primary),
                     ),
-                    validator: (v) => v!.isEmpty ? 'Gerekli' : null,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Gerekli';
+                      return null;
+                    },
                   ),
                   Gaps.xl,
 

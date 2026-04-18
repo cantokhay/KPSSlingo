@@ -51,7 +51,7 @@ class _ContinueLessonCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Devam Et', style: AppTextStyles.labelBold.copyWith(color: AppColors.textSecondary)),
+          Text('Devam Et', style: AppTextStyles.labelBold),
           Gaps.sm,
           Row(
             children: [

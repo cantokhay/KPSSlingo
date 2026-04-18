@@ -20,6 +20,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _usernameController = TextEditingController();
+  String _selectedLevel = 'lisans';
 
   @override
   void dispose() {
@@ -35,11 +36,43 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             _emailController.text.trim(),
             _passwordController.text.trim(),
             _usernameController.text.trim(),
+            _selectedLevel,
           );
       
       final authState = ref.read(authNotifierProvider);
       if (authState.status == AuthStatus.authenticated) {
         if (mounted) context.go('/home');
+      } else if (authState.status == AuthStatus.verificationPending) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusLg)),
+              title: const Text('E-posta Doğrulama', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.mark_email_unread_rounded, size: 64, color: AppColors.primary),
+                  Gaps.md,
+                  const Text(
+                    'Kayıt başarılı! Lütfen e-posta adresinize gönderilen doğrulama bağlantısına tıklayın.',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.go('/auth/login');
+                  },
+                  child: const Text('Giriş Ekranına Git'),
+                ),
+              ],
+            ),
+          );
+        }
       } else if (authState.status == AuthStatus.error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -111,7 +144,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _emailController,
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) => !v!.contains('@') ? 'Geçersiz e-posta' : null,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Gerekli';
+                    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                    if (!emailRegex.hasMatch(v.trim())) return 'Geçersiz e-posta';
+                    return null;
+                  },
                 ),
                 Gaps.md,
 
@@ -121,7 +159,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _passwordController,
                   icon: Icons.lock_outline_rounded,
                   obscureText: true,
-                  validator: (v) => v!.length < 6 ? 'En az 6 karakter' : null,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Gerekli';
+                    if (v.length < 6) return 'En az 6 karakter';
+                    if ((v.replaceAll(RegExp(r'[^a-zA-Z]'), '').length) < 2) return 'En az 2 harf içermeli';
+                    if (RegExp(r'(.)\1{2,}').hasMatch(v)) return 'Zayıf şifre (örn: 111, aaa)';
+                    return null;
+                  },
+                ),
+                Gaps.xl,
+                
+                Text(
+                  'Hedef Sınavını Seç',
+                  style: AppTextStyles.labelBold.copyWith(color: AppColors.primary),
+                  textAlign: TextAlign.left,
+                ),
+                Gaps.sm,
+                _buildLevelCard(
+                  title: 'Lisans',
+                  description: 'Üniversite mezunları için',
+                  value: 'lisans',
+                  color: AppColors.error,
+                ),
+                Gaps.sm,
+                _buildLevelCard(
+                  title: 'Önlisans',
+                  description: '2 yıllık mezunlar için',
+                  value: 'onlisans',
+                  color: AppColors.primary,
+                ),
+                Gaps.sm,
+                _buildLevelCard(
+                  title: 'Ortaöğretim',
+                  description: 'Lise mezunları için',
+                  value: 'ortaogretim',
+                  color: AppColors.success,
                 ),
                 Gaps.xl,
 
@@ -174,6 +246,59 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: AppColors.primary),
+      ),
+    );
+  }
+
+  Widget _buildLevelCard({
+    required String title,
+    required String description,
+    required String value,
+    required Color color,
+  }) {
+    final isSelected = _selectedLevel == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedLevel = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.05) : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          border: Border.all(
+            color: isSelected ? color : Theme.of(context).dividerColor.withOpacity(0.1),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(color: color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))
+          ] : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 2),
+                color: isSelected ? color : Colors.transparent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppTextStyles.labelBold.copyWith(
+                    color: isSelected ? color : null,
+                    fontSize: 14,
+                  )),
+                  Text(description, style: AppTextStyles.bodySmall.copyWith(fontSize: 11)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

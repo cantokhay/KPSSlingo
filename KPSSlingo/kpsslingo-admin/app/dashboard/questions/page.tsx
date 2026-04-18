@@ -11,15 +11,16 @@ export default async function QuestionsPage({
   searchParams,
 }: {
   searchParams: Promise<{ 
-    status?: string; topic?: string; lesson?: string; page?: string; minScore?: string;
+    status?: string; topic?: string; lesson?: string; page?: string; minScore?: string; suitability?: string;
     orderBy?: string; orderDir?: string;
   }>
 }) {
   const params    = await searchParams
-  const status    = params.status   ?? 'draft'
+  const status    = params.status   ?? 'all'
   const topicId   = params.topic    ?? ''
   const lessonId  = params.lesson   ?? ''
   const minScore  = params.minScore ?? ''
+  const suitability= params.suitability ?? ''
   const orderBy   = params.orderBy  ?? 'created_at'
   const orderDir  = (params.orderDir ?? 'desc') as 'asc' | 'desc'
   const page      = parseInt(params.page ?? '1')
@@ -38,7 +39,7 @@ export default async function QuestionsPage({
   let query = supabase
     .from('questions')
     .select(`
-      id, body, status, source, created_at, lesson_id, ai_review_score, explanation,
+      id, body, status, source, created_at, lesson_id, ai_review_score, difficulty_score, explanation,
       lessons ( id, title, topic_id, topics ( title ) ),
       question_options ( id, label, body )
     `, { count: 'exact' })
@@ -48,7 +49,11 @@ export default async function QuestionsPage({
   // Status filtresi
   if (status !== 'all') {
     if (status === 'draft') {
-      query = query.in('status', ['draft', 'draft_flagged'])
+      // Bekleyenler kısmına AI onayı bekleyenleri ve draftleri dahil ediyoruz
+      query = query.in('status', ['draft', 'draft_flagged', 'pending_ai_review'])
+    } else if (status === 'rejected') {
+      // Reddedilenler sayfası
+      query = query.eq('status', 'ai_rejected')
     } else {
       query = query.eq('status', status)
     }
@@ -57,6 +62,17 @@ export default async function QuestionsPage({
   // Skor filtresi
   if (minScore) {
     query = query.gte('ai_review_score', parseFloat(minScore))
+  }
+
+  // Uygunluk (Zorluk) filtresi
+  if (suitability) {
+    if (suitability === 'ortaogretim') {
+      query = query.lte('difficulty_score', 3.5)
+    } else if (suitability === 'onlisans') {
+      query = query.gte('difficulty_score', 3.6).lte('difficulty_score', 7.0)
+    } else if (suitability === 'lisans') {
+      query = query.gte('difficulty_score', 7.1)
+    }
   }
 
   // Ders filtresi
@@ -134,7 +150,7 @@ export default async function QuestionsPage({
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <a
               key={p}
-              href={`/dashboard/questions?status=${status}&page=${p}${topicId ? `&topic=${topicId}` : ''}${lessonId ? `&lesson=${lessonId}` : ''}${minScore ? `&minScore=${minScore}` : ''}`}
+              href={`/dashboard/questions?status=${status}&page=${p}${topicId ? `&topic=${topicId}` : ''}${lessonId ? `&lesson=${lessonId}` : ''}${minScore ? `&minScore=${minScore}` : ''}${suitability ? `&suitability=${suitability}` : ''}`}
               className={`
                 w-10 h-10 flex items-center justify-center rounded-xl text-sm font-bold
                 transition-all duration-200 border

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -51,17 +51,32 @@ export async function proxy(request: NextRequest) {
     }
 
     // Role check
-    const role = user.user_metadata?.role
-    if (role !== 'admin') {
-      // Sign out and redirect if not admin
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    const dbRole = roleData?.role
+
+    if (dbRole !== 'admin' && dbRole !== 'superadmin') {
+      // Sign out and redirect if not admin/superadmin
       await supabase.auth.signOut()
       return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
     }
   }
 
   // Prevent logged in admins from seeing login page
-  if (isLoginPage && user && user.user_metadata?.role === 'admin') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  if (isLoginPage && user) {
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+    const dbRole = roleData?.role
+    if (dbRole === 'admin' || dbRole === 'superadmin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   return response

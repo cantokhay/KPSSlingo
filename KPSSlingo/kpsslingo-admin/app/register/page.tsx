@@ -18,21 +18,42 @@ export default function RegisterPage() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
-    if (!email || !password) return
+    const trimmedEmail = email.trim();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      setError('Geçersiz e-posta formatı.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+
+    const letters = password.match(/[a-zA-Z]/g);
+    if (!letters || letters.length < 2) {
+      setError('Şifre en az 2 harf içermelidir.');
+      return;
+    }
+
+    if (/(.)\1{2}/.test(password)) {
+      setError('Şifre art arda tekrar eden 3 aynı karakteri içeremez (örn: 111, aaa).');
+      return;
+    }
 
     setLoading(true)
     setError(null)
 
     const supabase = createSupabaseBrowserClient()
     
-    // Register as admin for testing purposes
+    // Yalnızca admin olma talebinde bulunduğunu belirtiyoruz. Güvenlik için yetki sunucuda verilecek.
     const { error: authError } = await supabase.auth.signUp({
-      email,
+      email: trimmedEmail,
       password,
       options: {
         data: {
-          role: 'admin',
-          full_name: 'Test Admin'
+          requested_role: 'admin',
         }
       }
     })
@@ -75,9 +96,10 @@ export default function RegisterPage() {
 
           {success ? (
             <div className="bg-semantic-success/10 border border-semantic-success/20 text-semantic-success p-6 rounded-card text-center animate-in zoom-in duration-300">
-              <div className="text-4xl mb-4">🎉</div>
-              <h2 className="text-lg font-bold mb-2">Başarılı!</h2>
-              <p className="text-sm font-medium">Hesabınız oluşturuldu. Giriş sayfasına yönlendiriliyorsunuz...</p>
+              <div className="text-4xl mb-4">📧</div>
+              <h2 className="text-lg font-bold mb-2">E-posta Doğrulaması Gerekli</h2>
+              <p className="text-sm font-medium mb-2">Kayıt talebiniz alındı. Lütfen e-postanızı kontrol edin ve hesabınızı doğrulayın.</p>
+              <p className="text-xs opacity-70">Süperadmin onayından sonra giriş yapabileceksiniz.</p>
             </div>
           ) : (
             <form onSubmit={handleRegister} className="space-y-6">

@@ -9,24 +9,24 @@ import '../../auth/providers/auth_provider.dart';
 import 'package:kpsslingo/shared/providers/hearts_provider.dart';
 import '../../home/providers/home_providers.dart';
 
-final sessionNotifierProvider = StateNotifierProvider.autoDispose
-    .family<SessionNotifier, SessionState, String>(
-  (ref, lessonId) => SessionNotifier(
-    lessonId: lessonId,
+final topicQuizNotifierProvider = StateNotifierProvider.autoDispose
+    .family<TopicQuizNotifier, SessionState, String>(
+  (ref, topicId) => TopicQuizNotifier(
+    topicId: topicId,
     supabase: Supabase.instance.client,
     ref: ref,
   ),
 );
 
-class SessionNotifier extends StateNotifier<SessionState> {
-  final String lessonId;
+class TopicQuizNotifier extends StateNotifier<SessionState> {
+  final String topicId;
   final SupabaseClient supabase;
   final Ref ref;
 
   DateTime? _questionStartTime;
 
-  SessionNotifier({
-    required this.lessonId,
+  TopicQuizNotifier({
+    required this.topicId,
     required this.supabase,
     required this.ref,
   }) : super(const SessionState()) {
@@ -36,39 +36,50 @@ class SessionNotifier extends StateNotifier<SessionState> {
   Future<void> _loadQuestions() async {
     state = state.copyWith(phase: SessionPhase.loading);
     try {
-      // Kullanıcının seviyesine göre zorluk filtresi uygula
+      // Kullanıcının seviyesine göre zorluk aralığı belirle
       final userProfile = ref.read(userProfileProvider).value;
       final level = userProfile?.targetExam;
       
-      var query = supabase
-          .from('questions')
-          .select('*, question_options(*)')
-          .eq('lesson_id', lessonId)
-          .eq('status', 'published');
+      double minDiff = 0.0;
+      double maxDiff = 10.0; // Varsayılan (Lisans)
 
       if (level == 'onlisans') {
-        query = query.lte('difficulty_score', 7.0);
+        maxDiff = 7.0;
       } else if (level == 'ortaogretim') {
-        query = query.lte('difficulty_score', 3.5);
+        maxDiff = 3.5;
       }
 
-      final data = await query.order('created_at');
+      // RPC'yi kullanarak rastgele 15 soru ID'si getir
+      final response = await supabase.rpc('get_random_topic_question_ids', params: {
+        'p_topic_id': topicId,
+        'p_limit': 15,
+        'p_min_diff': minDiff,
+        'p_max_diff': maxDiff,
+      });
 
-      final List<QuestionWithOptions> allQuestions = (data as List)
-          .map((e) => QuestionWithOptions.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final List<dynamic> questionIds = response as List<dynamic>;
+      final List<String> ids = questionIds.map((e) => e['id'] as String).toList();
 
-      if (allQuestions.isEmpty) {
+      if (ids.isEmpty) {
         state = state.copyWith(
           phase: SessionPhase.error,
-          errorMessage: 'Bu ders için henüz soru yok.',
+          errorMessage: 'Bu konu için yeterli soru bulunamadı.',
         );
         return;
       }
 
-      // Maksimum 15 soru göster (Karıştırarak seç)
-      allQuestions.shuffle();
-      final questions = allQuestions.take(15).toList();
+      // Detayları çek
+      final data = await supabase
+          .from('questions')
+          .select('*, question_options(*)')
+          .inFilter('id', ids);
+
+      final questions = (data as List)
+          .map((e) => QuestionWithOptions.fromJson(e as Map<String, dynamic>))
+          .toList();
+      
+      // Karıştır (RPC zaten rastgele ama emin olalım)
+      questions.shuffle();
 
       state = state.copyWith(
         phase: SessionPhase.question,
@@ -98,7 +109,6 @@ class SessionNotifier extends StateNotifier<SessionState> {
       timeSpentMs: timeSpentMs,
     );
 
-    // Can Düşürme & Hata Kaydı (Arka planda)
     _handleResult(question.id, option, isCorrect);
   }
 
@@ -130,10 +140,8 @@ class SessionNotifier extends StateNotifier<SessionState> {
       if (existingMistake != null) {
         final count = (existingMistake['consecutive_correct_count'] as int) + 1;
         if (count >= 2) {
-          // 2 kere üst üste doğru yapıldı, hatayı sil
           await supabase.from('user_mistakes').delete().eq('id', existingMistake['id']);
         } else {
-          // Sayacı artır
           await supabase.from('user_mistakes').update({
             'consecutive_correct_count': count,
           }).eq('id', existingMistake['id']);
@@ -160,8 +168,8 @@ class SessionNotifier extends StateNotifier<SessionState> {
       state = state.copyWith(
         phase: SessionPhase.question,
         currentIndex: state.currentIndex + 1,
-        selectedOption: null, // this will invoke our copyWith where null is ignored if we use ??, but we used Object? so it's clearing properly. 
-        isCorrect: null,      // Same here
+        selectedOption: null,
+        isCorrect: null,
         answers: updatedAnswers,
         timeSpentMs: 0,
       );
@@ -177,9 +185,9 @@ class SessionNotifier extends StateNotifier<SessionState> {
 
     try {
       final response = await supabase.functions.invoke(
-        'complete-lesson',
+        'complete-topic-quiz', // Yeni Edge Function
         body: {
-          'lesson_id': lessonId,
+          'topic_id': topicId,
           'answers': answers.map((a) => a.toJson()).toList(),
         },
       );
@@ -194,10 +202,10 @@ class SessionNotifier extends StateNotifier<SessionState> {
 
       ref.invalidate(streakProvider);
       ref.invalidate(userProfileProvider);
-      ref.invalidate(nextLessonProvider);
       ref.invalidate(topicProgressProvider);
+      ref.invalidate(completedLessonIdsProvider);
 
-      ref.read(sessionResultProvider.notifier).state = result;
+      ref.read(topicQuizResultProvider.notifier).state = result;
 
     } catch (e) {
       state = state.copyWith(
@@ -221,4 +229,4 @@ class SessionNotifier extends StateNotifier<SessionState> {
   void retry() => _loadQuestions();
 }
 
-final sessionResultProvider = StateProvider.autoDispose<CompleteLessonResult?>((ref) => null);
+final topicQuizResultProvider = StateProvider.autoDispose<CompleteLessonResult?>((ref) => null);

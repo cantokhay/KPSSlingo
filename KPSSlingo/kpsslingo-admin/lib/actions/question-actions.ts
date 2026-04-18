@@ -6,12 +6,26 @@ import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/s
 import { calculateQuestionScore } from '@/lib/utils/score-calculator'
 
 // ── Admin auth helper ─────────────────────────────────────────────────────────
+// ── Admin/Superadmin auth helper ─────────────────────────────────────────────────────────
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user || user.user_metadata?.role !== 'admin') {
-    throw new Error('Unauthorized')
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) throw new Error('Oturum bulunamadı')
+
+  // Veritabanından rolü kontrol et
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .single()
+
+  const role = roleData?.role || (user.user_metadata?.role as string)
+  
+  if (role !== 'admin' && role !== 'superadmin') {
+    throw new Error('Bu işlem için yetkiniz yok')
   }
+  
   return user
 }
 
@@ -43,7 +57,7 @@ export async function approveQuestion(questionId: string) {
       ...(score !== null && { ai_review_score: score }),
     })
     .eq('id', questionId)
-    .in('status', ['draft', 'draft_flagged'])
+    .in('status', ['draft', 'draft_flagged', 'ai_rejected'])
 
   if (error) throw new Error('Onaylama başarısız: ' + error.message)
 
@@ -126,7 +140,7 @@ export async function bulkApproveQuestions(questionIds: string[]) {
       reviewed_at: new Date().toISOString(),
     })
     .in('id', questionIds)
-    .in('status', ['draft', 'draft_flagged'])
+    .in('status', ['draft', 'draft_flagged', 'ai_rejected'])
 
   if (error) throw new Error('Toplu onaylama başarısız: ' + error.message)
 
@@ -136,7 +150,7 @@ export async function bulkApproveQuestions(questionIds: string[]) {
   return { success: true, message: `✓ ${questionIds.length} soru yayınlandı` }
 }
 
-// ── Reject With Reason & Regeneration ────────────────────────────────────────
+// ── Reject With Reason (No Regeneration) ────────────────────────────────────────
 export async function rejectQuestionWithReason(
   questionId: string,
   lessonId: string,
@@ -159,21 +173,9 @@ export async function rejectQuestionWithReason(
 
   if (rejectError) throw new Error('Reddetme başarısız: ' + rejectError.message)
 
-  const { error: regenError } = await supabase
-    .from('regeneration_requests')
-    .insert({
-      original_question_id: questionId,
-      lesson_id:            lessonId,
-      rejection_reason_code: rejectionReasonCode,
-      admin_note:           adminNote ?? null,
-      status:               'pending',
-    })
-
-  if (regenError) console.error('Regeneration request failed:', regenError)
-
   revalidatePath('/dashboard/questions')
   revalidatePath(`/dashboard/questions/${questionId}`)
   revalidatePath('/dashboard')
 
-  return { success: true, message: 'Soru reddedildi, yeniden üretim talep edildi' }
+  return { success: true, message: 'Soru reddedildi. Manuel düzeltme için reddedilenler listesinde tutuluyor.' }
 }

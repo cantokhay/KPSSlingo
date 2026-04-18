@@ -9,6 +9,7 @@ import 'package:kpsslingo/features/auth/providers/auth_notifier.dart';
 import 'package:kpsslingo/features/profile/providers/profile_provider.dart';
 import 'package:kpsslingo/core/providers/theme_provider.dart';
 import 'package:kpsslingo/core/theme/neumorphic_style.dart';
+import 'package:kpsslingo/features/home/providers/home_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -17,6 +18,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(profileStatsProvider);
     final user = ref.watch(currentUserProvider);
+    final userProfileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
       body: CustomScrollView(
@@ -39,6 +41,32 @@ class ProfileScreen extends ConsumerWidget {
                       icon: Icons.person_outline_rounded, 
                       label: 'Bilgilerimi Güncelle',
                       onTap: () => _showComingSoon(context, 'Profil Güncelleme'),
+                    ),
+                    _MenuItem(
+                      icon: Icons.school_outlined, 
+                      label: 'Sınav Hedefim',
+                      trailing: userProfileAsync.when(
+                        data: (profile) => Text(
+                          _getLevelLabel(profile?.targetExam),
+                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+                        ),
+                        loading: () => const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                        error: (_, __) => const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                      ),
+                      onTap: () => _showLevelSelection(context, ref, userProfileAsync.valueOrNull?.targetExam),
+                    ),
+                    _MenuItem(
+                      icon: Icons.calendar_month_rounded, 
+                      label: 'Sınav Tarihim',
+                      trailing: userProfileAsync.when(
+                        data: (profile) => Text(
+                          _formatDate(profile?.kpssExamDate),
+                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+                        ),
+                        loading: () => const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                        error: (_, __) => const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                      ),
+                      onTap: () => _showDatePicker(context, ref, userProfileAsync.valueOrNull?.kpssExamDate),
                     ),
                     _MenuItem(
                       icon: Icons.notifications_none_rounded, 
@@ -139,6 +167,81 @@ class ProfileScreen extends ConsumerWidget {
         backgroundColor: AppColors.primary,
       ),
     );
+  }
+
+  String _getLevelLabel(String? level) {
+    switch (level) {
+      case 'lisans': return 'Lisans';
+      case 'onlisans': return 'Önlisans';
+      case 'ortaogretim': return 'Ortaöğretim';
+      default: return 'Belirlenmedi';
+    }
+  }
+
+  void _showLevelSelection(BuildContext context, WidgetRef ref, String? currentLevel) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusLg)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(AppDimensions.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Sınav Hedefini Seç', style: AppTextStyles.headlineSmall),
+            Gaps.md,
+            _buildLevelOption(context, ref, 'Lisans', 'lisans', currentLevel == 'lisans'),
+            _buildLevelOption(context, ref, 'Önlisans', 'onlisans', currentLevel == 'onlisans'),
+            _buildLevelOption(context, ref, 'Ortaöğretim', 'ortaogretim', currentLevel == 'ortaogretim'),
+            Gaps.xl,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLevelOption(BuildContext context, WidgetRef ref, String label, String value, bool isSelected) {
+    return ListTile(
+      title: Text(label, style: AppTextStyles.bodyLarge),
+      trailing: isSelected ? const Icon(Icons.check_circle_rounded, color: AppColors.primary) : null,
+      onTap: () async {
+        Navigator.pop(context);
+        await ref.read(authNotifierProvider.notifier).updateTargetExam(value);
+        ref.invalidate(userProfileProvider);
+      },
+    );
+  }
+
+  void _showDatePicker(BuildContext context, WidgetRef ref, DateTime? currentDate) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: currentDate ?? DateTime.now().add(const Duration(days: 90)),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)), // Geçmiş sınavlar için de bakılabilir belki
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: AppColors.primary,
+              primary: AppColors.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      await ref.read(authNotifierProvider.notifier).updateExamDate(picked);
+      ref.invalidate(userProfileProvider);
+    }
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Seçilmedi';
+    return "${date.day}/${date.month}/${date.year}";
   }
 }
 
@@ -264,10 +367,12 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Widget? trailing;
   const _MenuItem({
     required this.icon, 
     required this.label,
     required this.onTap,
+    this.trailing,
   });
 
   @override
@@ -275,7 +380,7 @@ class _MenuItem extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: AppColors.textSecondary, size: 22),
       title: Text(label, style: AppTextStyles.bodyLarge),
-      trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+      trailing: trailing ?? const Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
       onTap: onTap,
     );
   }

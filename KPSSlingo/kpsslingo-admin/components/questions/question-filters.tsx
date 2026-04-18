@@ -4,10 +4,11 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 
 const statuses = [
+  { value: 'all',       label: 'Tümü' },
   { value: 'draft',     label: 'Bekleyenler' },
   { value: 'published', label: 'Yayındakiler' },
+  { value: 'rejected',  label: 'Reddedilenler' },
   { value: 'archived',  label: 'Arşivlenenler' },
-  { value: 'all',       label: 'Tümü' },
 ]
 
 interface Topic {
@@ -140,6 +141,28 @@ export function QuestionFilters({ currentStatus, topics, lessons }: QuestionFilt
           <option value="8">⭐⭐⭐ 8+ (Yüksek)</option>
           <option value="6">⭐⭐ 6+ (Orta)</option>
           <option value="4">⭐ 4+ (Düşük)</option>
+        </select>
+        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-ink-disabled">▼</span>
+      </div>
+
+      {/* Sınav Uygunluğu (Zorluk) dropdown */}
+      <div className="relative">
+        <select
+          value={searchParams.get('suitability') ?? ''}
+          onChange={(e) => updateParam('suitability', e.target.value)}
+          className={`
+            appearance-none pl-3 pr-8 py-2 rounded-xl text-xs font-bold border transition-all duration-200
+            bg-surface cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-primary/20
+            ${searchParams.get('suitability')
+              ? 'border-semantic-error text-semantic-error'
+              : 'border-ink-disabled/10 text-ink-secondary hover:border-brand-primary/40'
+            }
+          `}
+        >
+          <option value="">🎯 Sınav Seç</option>
+          <option value="ortaogretim">Ortaöğretim Uygun</option>
+          <option value="onlisans">Önlisans Uygun</option>
+          <option value="lisans">Lisans Uygun (Zor)</option>
         </select>
         <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-ink-disabled">▼</span>
       </div>

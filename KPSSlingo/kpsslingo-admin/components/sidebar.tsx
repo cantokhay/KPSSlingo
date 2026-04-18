@@ -13,7 +13,7 @@ const navItems = [
   { href: '/dashboard/topics',    label: 'Konular',    icon: '🗂️' },
 ]
 
-export function Sidebar({ draftCount }: { draftCount: number }) {
+export function Sidebar({ draftCount, isSuperAdmin = false }: { draftCount: number, isSuperAdmin?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -44,7 +44,7 @@ export function Sidebar({ draftCount }: { draftCount: number }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-6 space-y-1">
-        {navItems.map((item) => {
+        {[...navItems, ...(isSuperAdmin ? [{ href: '/dashboard/users', label: 'Kullanıcılar', icon: '👥' }] : [])].map((item) => {
           const isActive = pathname === item.href || 
             (item.href !== '/dashboard' && pathname.startsWith(item.href))
 

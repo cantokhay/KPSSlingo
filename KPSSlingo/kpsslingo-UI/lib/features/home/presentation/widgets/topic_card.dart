@@ -106,6 +106,12 @@ class _TopicCardState extends ConsumerState<TopicCard>
                       ),
                     ),
                     Gaps.w(AppDimensions.sm),
+                    IconButton(
+                      icon: Icon(Icons.shuffle_rounded, color: color, size: 22),
+                      tooltip: 'Rastgele Konu Çöz (Bonus XP)',
+                      onPressed: () => context.push('/topic-quiz/${widget.topic.id}'),
+                    ),
+                    Gaps.w(AppDimensions.xs),
                     _isExpanded 
                       ? Icon(Icons.remove_circle_outline_rounded, color: color.withOpacity(0.5))
                       : Icon(Icons.add_circle_outline_rounded, color: color.withOpacity(0.5)),
@@ -174,13 +180,16 @@ class _TopicProgressBar extends ConsumerWidget {
   }
 }
 
-class _LessonItems extends StatelessWidget {
+class _LessonItems extends ConsumerWidget {
   final List<Lesson> lessons;
   final Color topicColor;
   const _LessonItems({required this.lessons, required this.topicColor});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final completedIdsAsync = ref.watch(completedLessonIdsProvider);
+    final completedIds = completedIdsAsync.valueOrNull ?? [];
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -189,25 +198,39 @@ class _LessonItems extends StatelessWidget {
       separatorBuilder: (_, __) => Gaps.sm,
       itemBuilder: (context, index) {
         final lesson = lessons[index];
+        final isCompleted = completedIds.contains(lesson.id);
+
         return InkWell(
           onTap: () => context.push('/lesson/${lesson.id}'),
           borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: AppDimensions.md, vertical: AppDimensions.sm),
             decoration: BoxDecoration(
-              border: Border.all(color: topicColor.withOpacity(0.1)),
+              color: isCompleted ? topicColor.withOpacity(0.03) : null,
+              border: Border.all(color: isCompleted ? topicColor.withOpacity(0.2) : topicColor.withOpacity(0.1)),
               borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 12,
-                  backgroundColor: topicColor.withOpacity(0.1),
-                  child: Text('${index + 1}', style: TextStyle(fontSize: 10, color: topicColor, fontWeight: FontWeight.bold)),
+                  backgroundColor: isCompleted ? Colors.green.withOpacity(0.1) : topicColor.withOpacity(0.1),
+                  child: isCompleted 
+                    ? const Icon(Icons.check_rounded, size: 14, color: Colors.green)
+                    : Text('${index + 1}', style: TextStyle(fontSize: 10, color: topicColor, fontWeight: FontWeight.bold)),
                 ),
                 Gaps.md,
-                Expanded(child: Text(lesson.title, style: AppTextStyles.bodyMedium)),
-                const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey),
+                Expanded(child: Text(
+                  lesson.title, 
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: isCompleted ? FontWeight.w600 : FontWeight.normal,
+                  )
+                )),
+                Icon(
+                  isCompleted ? Icons.replay_rounded : Icons.chevron_right_rounded, 
+                  size: 18, 
+                  color: isCompleted ? topicColor.withOpacity(0.7) : null
+                ),
               ],
             ),
           ),

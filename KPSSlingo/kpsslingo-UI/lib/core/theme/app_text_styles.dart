@@ -43,7 +43,7 @@ class AppTextStyles {
   );
 
   static TextStyle get bodySmall => GoogleFonts.plusJakartaSans(
-    fontSize: 13, fontWeight: FontWeight.w400, color: AppColors.textSecondary,
+    fontSize: 13, fontWeight: FontWeight.w400,
   );
 
   static TextStyle get labelBold => GoogleFonts.plusJakartaSans(

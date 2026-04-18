@@ -10,7 +10,7 @@ final profileStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((r
   // 1. Toplam XP ve Seviye
   final profileData = await supabase
       .from('user_profiles')
-      .select('xp, level, kpss_exam_date')
+      .select('total_xp, current_level, kpss_exam_date')
       .eq('id', user.id)
       .single();
 
@@ -30,8 +30,8 @@ final profileStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((r
       .maybeSingle();
 
   return {
-    'xp': profileData['xp'] ?? 0,
-    'level': profileData['level'] ?? 1,
+    'xp': profileData['total_xp'] ?? 0,
+    'level': profileData['current_level'] ?? 1,
     'exam_date': profileData['kpss_exam_date'],
     'completed_lessons': completedCountValue,
     'streak': streakData != null ? streakData['current_streak'] : 0,

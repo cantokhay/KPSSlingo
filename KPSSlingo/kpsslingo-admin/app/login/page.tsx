@@ -27,13 +27,24 @@ function LoginForm() {
 
   async function handleLogin(e?: React.FormEvent) {
     if (e) e.preventDefault()
-    if (!email || !password) return
+    const trimmedEmail = email.trim();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      setError('Geçersiz e-posta formatı.');
+      return;
+    }
+
+    if (!password) return;
 
     setLoading(true)
     setError(null)
 
     const supabase = createSupabaseBrowserClient()
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ 
+      email: trimmedEmail, 
+      password 
+    })
 
     if (authError) {
       setError(authError.message)
@@ -42,10 +53,17 @@ function LoginForm() {
     }
 
     // Role check
-    const role = data.user?.user_metadata?.role
-    if (role !== 'admin') {
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', data.user?.id)
+      .single();
+      
+    const dbRole = roleData?.role;
+
+    if (dbRole !== 'admin' && dbRole !== 'superadmin') {
       await supabase.auth.signOut()
-      setError('Bu hesabın admin yetkisi yok.')
+      setError('Bu hesabın admin yetkisi yok veya henüz onaylanmadı.')
       setLoading(false)
       return
     }

@@ -6,11 +6,13 @@ import {
   getQuestionProductionTrend,
   getTopicDistribution,
   getScoreDistribution,
+  getDifficultyDistribution,
   getGeneralStats
 } from '@/lib/actions/dashboard-stats'
 import { ProductionTrendChart } from '@/components/dashboard/charts/production-trend-chart'
 import { TopicDistributionChart } from '@/components/dashboard/charts/topic-distribution-chart'
 import { ScoreDistributionChart } from '@/components/dashboard/charts/score-distribution-chart'
+import { DifficultyDistributionChart } from '@/components/dashboard/charts/difficulty-distribution-chart'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,11 +22,13 @@ export default async function DashboardPage() {
     trendData,
     topicData,
     scoreData,
+    difficultyData,
     stats
   ] = await Promise.all([
     getQuestionProductionTrend(),
     getTopicDistribution(),
     getScoreDistribution(),
+    getDifficultyDistribution(),
     getGeneralStats()
   ])
 
@@ -36,7 +40,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <StatCard
           label="Bekleyen Sorular"
           value={stats.draftCount}
@@ -52,10 +56,17 @@ export default async function DashboardPage() {
           href="/dashboard/questions?status=published"
         />
         <StatCard
+          label="Reddedilenler"
+          value={stats.rejectedCount}
+          icon="🚫"
+          accent="error"
+          href="/dashboard/questions?status=rejected"
+        />
+        <StatCard
           label="Toplam Öğrenci"
           value={stats.userCount}
-          icon="🎓"
-          accent="primary"
+          icon="👥"
+          href="/dashboard/users"
         />
         <StatCard
           label="Toplam Soru"
@@ -104,6 +115,18 @@ export default async function DashboardPage() {
           <div className="w-10 h-10 rounded-2xl bg-brand-accent/5 flex items-center justify-center text-xl">📊</div>
         </div>
         <ScoreDistributionChart data={scoreData} />
+      </section>
+
+      {/* Difficulty Distribution (Bar Chart Full Width) */}
+      <section className="bg-surface rounded-[32px] border border-ink-disabled/10 p-8 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h2 className="text-xl font-bold text-ink-primary">Sınav Uygunluğu (Zorluk)</h2>
+            <p className="text-xs text-ink-disabled font-bold uppercase tracking-widest mt-1">Hangi sınava ne kadar uygun sorumuz var?</p>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-semantic-error/5 flex items-center justify-center text-xl">🎯</div>
+        </div>
+        <DifficultyDistributionChart data={difficultyData} />
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

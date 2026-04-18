@@ -1,6 +1,6 @@
 // lib/types.ts
 
-export type QuestionStatus = 'draft' | 'published' | 'archived'
+export type QuestionStatus = 'draft' | 'published' | 'archived' | 'draft_flagged' | 'ai_rejected'
 export type QuestionSource = 'ai_generated' | 'manual' | 'kpss_inspired'
 
 export interface QuestionOption {

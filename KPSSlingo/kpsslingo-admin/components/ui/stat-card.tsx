@@ -29,7 +29,7 @@ export function StatCard({ label, value, icon, accent, href }: StatCardProps) {
           {label}
         </span>
       </div>
-      <div className="text-3xl font-extrabold text-ink-primary">
+      <div className="text-2xl sm:text-3xl font-extrabold text-ink-primary tracking-tight">
         {value}
       </div>
     </div>

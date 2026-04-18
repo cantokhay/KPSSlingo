@@ -30,7 +30,7 @@ class SessionHeader extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).maybePop();
                 },
-                icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                icon: const Icon(Icons.close_rounded),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -60,9 +60,7 @@ class SessionHeader extends StatelessWidget {
 
               Text(
                 '${currentIndex + 1}/$total',
-                style: AppTextStyles.labelBold.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTextStyles.labelBold,
               ),
             ],
           ),

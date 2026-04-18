@@ -12,11 +12,13 @@ class OptionTile extends ConsumerWidget {
   final QuestionOption option;
   final String? selectedOption;
   final String lessonId;
+  final VoidCallback? onTap;
 
   const OptionTile({
     required this.option,
     required this.selectedOption,
     required this.lessonId,
+    this.onTap,
     super.key,
   });
 
@@ -62,7 +64,7 @@ class OptionTile extends ConsumerWidget {
             ],
       ),
       child: InkWell(
-        onTap: () => ref
+        onTap: onTap ?? () => ref
             .read(sessionNotifierProvider(lessonId).notifier)
             .selectOption(option.label),
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),

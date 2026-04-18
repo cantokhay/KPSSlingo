@@ -8,6 +8,8 @@ class UserProfile {
   final int hearts;
   final DateTime lastHeartRegen;
   final bool onboardingComplete;
+  final String? targetExam;
+  final DateTime? kpssExamDate;
 
   const UserProfile({
     required this.id,
@@ -19,6 +21,8 @@ class UserProfile {
     required this.hearts,
     required this.lastHeartRegen,
     this.onboardingComplete = false,
+    this.targetExam,
+    this.kpssExamDate,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -31,5 +35,7 @@ class UserProfile {
         hearts: json['hearts'] as int? ?? 10,
         lastHeartRegen: DateTime.parse(json['last_heart_regen'] as String? ?? DateTime.now().toIso8601String()),
         onboardingComplete: json['onboarding_complete'] as bool? ?? false,
+        targetExam: json['target_exam'] as String?,
+        kpssExamDate: json['kpss_exam_date'] != null ? DateTime.parse(json['kpss_exam_date'] as String) : null,
       );
 }

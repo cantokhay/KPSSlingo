@@ -43,13 +43,15 @@ export function TopicDistributionChart({ data }: TopicDistributionChartProps) {
           <Tooltip
             contentStyle={{
               borderRadius: '16px',
-              border: '1px solid var(--ink-disabled-alpha-10, rgba(0,0,0,0.1))',
+              border: '1px solid var(--ink-disabled-alpha-10, rgba(148, 163, 184, 0.1))',
               backgroundColor: 'var(--surface)',
-              color: 'var(--ink-primary)',
-              boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+              boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)',
               fontSize: '11px',
-              fontWeight: 700
+              fontWeight: 700,
+              padding: '8px 12px'
             }}
+            itemStyle={{ color: 'var(--ink-primary)', padding: '2px 0' }}
+            labelStyle={{ color: 'var(--ink-secondary)', marginBottom: '4px' }}
           />
           <Legend
             verticalAlign="bottom"

@@ -17,6 +17,7 @@ import 'package:kpsslingo/features/auth/providers/auth_provider.dart';
 import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/features/session/models/complete_lesson_result.dart';
 import 'package:kpsslingo/features/session/presentation/mistake_review_screen.dart';
+import 'package:kpsslingo/features/session/presentation/topic_quiz_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -89,6 +90,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/mistake-review',
         builder: (_, __) => const MistakeReviewScreen(),
+      ),
+      GoRoute(
+        path: '/topic-quiz/:topicId',
+        builder: (_, state) => TopicQuizScreen(
+          topicId: state.pathParameters['topicId']!,
+        ),
       ),
     ],
   );
