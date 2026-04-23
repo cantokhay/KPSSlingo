@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/home_data_provider.dart';
+import '../providers/home_providers.dart';
+import 'package:kpsslingo/shared/providers/hearts_provider.dart';
 import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
 import 'package:kpsslingo/core/theme/app_text_styles.dart';
@@ -11,6 +13,7 @@ import 'widgets/continue_lesson_section.dart';
 import 'widgets/topic_list_section.dart';
 import 'widgets/daily_quest_card.dart';
 import 'widgets/heart_indicator.dart';
+import 'widgets/info_banners_section.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -41,6 +44,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             SliverToBoxAdapter(child: Gaps.md),
+            
+            // 3. Bilgi Bannerları (Yüksel, Ligler vb.)
+            const SliverToBoxAdapter(child: InfoBannersSection()),
+            SliverToBoxAdapter(child: Gaps.md),
 
             // 3. Devam Et CTA
             SliverToBoxAdapter(child: ContinueLessonSection()),
@@ -68,9 +75,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppBar(
-      title: const Text(
-        'KPSSlingo',
-        style: TextStyle(fontWeight: FontWeight.bold),
+      title: GestureDetector(
+        onLongPress: () => _showDebugDialog(context),
+        child: Text(
+          'KPSSlingo',
+          style: AppTextStyles.titleLarge.copyWith(
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1,
+          ),
+        ),
       ),
       actions: [
         const Center(child: HeartIndicator()),
@@ -109,6 +122,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _NotificationsSheet(),
+    );
+  }
+
+  void _showDebugDialog(BuildContext context) {
+    final offset = ref.read(serverTimeOffsetProvider);
+    final heartState = ref.read(heartsProvider);
+    final profile = ref.read(userProfileProvider).value;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sistem Bilgisi (Debug)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Server Time Offset: ${offset.inSeconds}s'),
+            Text('Client Time: ${DateTime.now().toIso8601String().substring(11, 19)}'),
+            Text('Server Time: ${DateTime.now().toUtc().add(offset).toIso8601String().substring(11, 19)}'),
+            const Divider(),
+            Text('Hearts: ${heartState?.hearts ?? 'N/A'}'),
+            Text('Next Regen: ${heartState?.timeUntilNext.inSeconds ?? 0}s'),
+            const Divider(),
+            Text('Total XP: ${profile?.totalXp ?? 0}'),
+            Text('Level: ${profile?.currentLevel ?? 0}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Kapat'),
+          ),
+        ],
+      ),
     );
   }
 }

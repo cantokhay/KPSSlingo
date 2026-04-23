@@ -8,6 +8,8 @@ import '../models/complete_lesson_result.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'package:kpsslingo/shared/providers/hearts_provider.dart';
 import '../../home/providers/home_providers.dart';
+import '../../home/providers/home_data_provider.dart';
+import 'mistakes_provider.dart';
 
 final topicQuizNotifierProvider = StateNotifierProvider.autoDispose
     .family<TopicQuizNotifier, SessionState, String>(
@@ -71,19 +73,33 @@ class TopicQuizNotifier extends StateNotifier<SessionState> {
       // Detayları çek
       final data = await supabase
           .from('questions')
-          .select('*, question_options(*)')
+          .select('*, question_options(*), question_answers(correct_option)')
           .inFilter('id', ids);
 
       final questions = (data as List)
           .map((e) => QuestionWithOptions.fromJson(e as Map<String, dynamic>))
           .toList();
       
-      // Karıştır (RPC zaten rastgele ama emin olalım)
-      questions.shuffle();
+      // GÜVENLİK: Cevapları ayrı bir RPC ile çek
+      final qIds = questions.map((q) => q.id).toList();
+      final answersData = await supabase.rpc('get_session_answers', params: {
+        'p_question_ids': qIds,
+      });
+
+      final List<dynamic> answersList = answersData as List<dynamic>;
+      final updatedQuestions = questions.map((q) {
+        final ans = answersList.firstWhere((a) => a['question_id'] == q.id, orElse: () => null);
+        if (ans != null) {
+          return q.copyWith(correctOption: ans['correct_option'] as String);
+        }
+        return q;
+      }).toList();
+
+      updatedQuestions.shuffle();
 
       state = state.copyWith(
         phase: SessionPhase.question,
-        questions: questions,
+        questions: updatedQuestions,
         currentIndex: 0,
       );
       _startQuestionTimer();
@@ -109,44 +125,28 @@ class TopicQuizNotifier extends StateNotifier<SessionState> {
       timeSpentMs: timeSpentMs,
     );
 
-    _handleResult(question.id, option, isCorrect);
+    await _handleResult(question.id, option, isCorrect);
   }
 
   Future<void> _handleResult(String questionId, String selectedOption, bool isCorrect) async {
     final user = ref.read(currentUserProvider);
     if (user == null) return;
 
+    // Anında veritabanına işle (Hata takibi ve yarıda bırakanlar için)
+    try {
+      await supabase.rpc('log_single_answer', params: {
+        'p_question_id': questionId,
+        'p_lesson_id': null, // Topic quiz'de lesson_id yok
+        'p_selected_option': selectedOption,
+        'p_is_correct': isCorrect,
+        'p_time_spent_ms': state.timeSpentMs,
+      });
+    } catch (e) {
+      // Sessiz hata
+    }
+
     if (!isCorrect) {
-      // 1. Can düşür
       await ref.read(heartsProvider.notifier).useHeart();
-
-      // 2. Hatayı kaydet/güncelle
-      await supabase.from('user_mistakes').upsert({
-        'user_id': user.id,
-        'question_id': questionId,
-        'last_wrong_answer': selectedOption,
-        'consecutive_correct_count': 0,
-        'updated_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id, question_id');
-    } else {
-      // Doğruysa hata listesini kontrol et
-      final existingMistake = await supabase
-          .from('user_mistakes')
-          .select('id, consecutive_correct_count')
-          .eq('user_id', user.id)
-          .eq('question_id', questionId)
-          .maybeSingle();
-
-      if (existingMistake != null) {
-        final count = (existingMistake['consecutive_correct_count'] as int) + 1;
-        if (count >= 2) {
-          await supabase.from('user_mistakes').delete().eq('id', existingMistake['id']);
-        } else {
-          await supabase.from('user_mistakes').update({
-            'consecutive_correct_count': count,
-          }).eq('id', existingMistake['id']);
-        }
-      }
     }
   }
 
@@ -178,12 +178,14 @@ class TopicQuizNotifier extends StateNotifier<SessionState> {
   }
 
   Future<void> _submitSession(List<AnswerRecord> answers) async {
+    final user = ref.read(currentUserProvider);
     state = state.copyWith(
       phase: SessionPhase.submitting,
       answers: answers,
     );
 
     try {
+
       final response = await supabase.functions.invoke(
         'complete-topic-quiz', // Yeni Edge Function
         body: {
@@ -200,10 +202,16 @@ class TopicQuizNotifier extends StateNotifier<SessionState> {
         response.data as Map<String, dynamic>,
       );
 
-      ref.invalidate(streakProvider);
       ref.invalidate(userProfileProvider);
+      ref.invalidate(mistakesCountProvider);
+      ref.invalidate(streakProvider);
       ref.invalidate(topicProgressProvider);
       ref.invalidate(completedLessonIdsProvider);
+      
+      Future.microtask(() {
+        ref.invalidate(dailyQuestProvider);
+        ref.invalidate(dailyXpProvider);
+      });
 
       ref.read(topicQuizResultProvider.notifier).state = result;
 

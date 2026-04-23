@@ -7,14 +7,9 @@ export default async function UsersPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: roleData } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .single()
-
-  const currentRole = roleData?.role || 'student'
-
+  // Role check from JWT (app_metadata)
+  const currentRole = user.app_metadata?.role || 'ogrenci'
+ 
   if (currentRole !== 'superadmin' && currentRole !== 'admin') {
     redirect('/dashboard')
   }
@@ -35,7 +30,7 @@ export default async function UsersPage() {
       const roleRecord = userRoles?.find(r => r.user_id === u.id)
       return {
         ...u,
-        dbRole: roleRecord?.role ?? 'student'
+        dbRole: roleRecord?.role ?? 'ogrenci'
       }
     });
 

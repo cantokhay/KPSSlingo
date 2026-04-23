@@ -5,6 +5,7 @@ enum SessionPhase {
   question,
   feedback,
   submitting,
+  summary,
   error,
 }
 
@@ -82,6 +83,7 @@ class AnswerRecord {
   Map<String, dynamic> toJson() => {
     'question_id': questionId,
     'selected_option': selectedOption,
+    'is_correct': isCorrect,
     'time_spent_ms': timeSpentMs,
   };
 }

@@ -30,12 +30,8 @@ class _MistakeReviewScreenState extends ConsumerState<MistakeReviewScreen> {
     final state = ref.watch(mistakeReviewNotifierProvider);
 
     ref.listen(heartsProvider, (previous, next) {
-      if (next != null && next.hearts == 0) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const HeartsOutDialog(),
-        );
+      if (next != null && next.hearts == 0 && (previous == null || previous.hearts > 0)) {
+        HeartsOutDialog.show(context, ref);
       }
     });
 
@@ -47,7 +43,8 @@ class _MistakeReviewScreenState extends ConsumerState<MistakeReviewScreen> {
             SessionPhase.loading    => const Center(child: CircularProgressIndicator()),
             SessionPhase.question   => _MistakeQuestionView(state: state),
             SessionPhase.feedback   => _MistakeFeedbackView(state: state),
-            SessionPhase.submitting => _ReviewCompleteView(),
+            SessionPhase.submitting => const Center(child: CircularProgressIndicator()),
+            SessionPhase.summary    => _ReviewCompleteView(state: state),
             SessionPhase.error      => _ReviewErrorView(message: state.errorMessage ?? 'Bir hata oluştu.'),
           },
         ),
@@ -69,7 +66,6 @@ class _MistakeQuestionView extends ConsumerWidget {
         SessionHeader(
           currentIndex: state.currentIndex,
           total: state.totalQuestions,
-          lessonId: 'mistakes', // Fake ID for progress
         ),
         Gaps.lg,
         Expanded(
@@ -84,13 +80,10 @@ class _MistakeQuestionView extends ConsumerWidget {
                 const Spacer(),
                 ...question.options.map((option) => Padding(
                   padding: const EdgeInsets.only(bottom: AppDimensions.sm),
-                  child: GestureDetector(
-                    onTap: () => ref.read(mistakeReviewNotifierProvider.notifier).selectOption(option.id),
-                    child: OptionTile(
-                      option: option,
-                      selectedOption: state.selectedOption,
-                      lessonId: 'mistakes',
-                    ),
+                  child: OptionTile(
+                    option: option,
+                    selectedOption: state.selectedOption,
+                    onTap: () => ref.read(mistakeReviewNotifierProvider.notifier).selectOption(option.label),
                   ),
                 )),
                 Gaps.xl,
@@ -116,7 +109,6 @@ class _MistakeFeedbackView extends ConsumerWidget {
         SessionHeader(
           currentIndex: state.currentIndex,
           total: state.totalQuestions,
-          lessonId: 'mistakes',
         ),
         Gaps.lg,
         Expanded(
@@ -144,7 +136,10 @@ class _MistakeFeedbackView extends ConsumerWidget {
         FeedbackBottomBanner(
           isCorrect: state.isCorrect!,
           explanation: question.explanation,
-          onNext: () => ref.read(mistakeReviewNotifierProvider.notifier).nextQuestion(),
+          onNext: () {
+            FocusScope.of(context).unfocus();
+            ref.read(mistakeReviewNotifierProvider.notifier).nextQuestion();
+          },
           isLast: state.isLastQuestion,
           questionBody: question.body,
           correctAnswer: question.correctOption,
@@ -282,23 +277,107 @@ class _AIAnalysisSheetState extends ConsumerState<_AIAnalysisSheet> {
 }
 
 class _ReviewCompleteView extends StatelessWidget {
+  final SessionState state;
+  const _ReviewCompleteView({required this.state});
+
   @override
   Widget build(BuildContext context) {
-    return Center(
+    final correctCount = state.answers.where((a) => a.isCorrect).length;
+    final totalCount = state.questions.length;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDimensions.lg),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.check_circle_outline_rounded, size: 80, color: AppColors.success),
+          const Icon(Icons.stars_rounded, size: 100, color: Colors.amber),
           Gaps.lg,
-          Text('Harika!', style: AppTextStyles.headlineMedium),
-          Text('Hatalarını temizledin.', style: AppTextStyles.bodyLarge),
-          Gaps.xl,
-          ElevatedButton(
-            onPressed: () => context.go('/home'),
-            child: const Text('Ana Sayfaya Dön'),
+          Text(
+            'Sesansı Tamamladın!',
+            style: AppTextStyles.headlineMedium.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Gaps.sm,
+          Text(
+            '$totalCount sorudan $correctCount tanesini doğru cevapladın.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
+          ),
+          Gaps.xxl,
+          Container(
+            padding: const EdgeInsets.all(AppDimensions.lg),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+              border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _RewardItem(
+                  icon: Icons.bolt_rounded,
+                  value: '+10 XP',
+                  label: 'Kazanıldı',
+                  color: Colors.amber,
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  color: AppColors.primary.withOpacity(0.1),
+                ),
+                _RewardItem(
+                  icon: Icons.task_alt_rounded,
+                  value: '1 GÖREV',
+                  label: 'Tamamlandı',
+                  color: AppColors.success,
+                ),
+              ],
+            ),
+          ),
+          Gaps.xxxl,
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => context.go('/home'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                ),
+              ),
+              child: Text('ANA SAYFAYA DÖN', style: AppTextStyles.labelBold),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RewardItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  const _RewardItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        Gaps.xs,
+        Text(value, style: AppTextStyles.titleMedium.copyWith(color: color, fontWeight: FontWeight.bold)),
+        Text(label, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textDisabled)),
+      ],
     );
   }
 }

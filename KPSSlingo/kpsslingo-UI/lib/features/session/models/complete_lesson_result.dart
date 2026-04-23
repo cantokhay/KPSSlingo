@@ -6,11 +6,15 @@ class CompleteLessonResult {
   final int score;        // 0-100 (yüzde)
   final int xpEarned;     // Bu seansta kazanılan XP
   final int streak;       // Güncel streak (seans sonrası)
+  final int? correctCount; // Opsiyonel: Doğru cevap sayısı
+  final int? totalCount;   // Opsiyonel: Toplam soru sayısı
 
   const CompleteLessonResult({
     required this.score,
     required this.xpEarned,
     required this.streak,
+    this.correctCount,
+    this.totalCount,
   });
 
   factory CompleteLessonResult.fromJson(Map<String, dynamic> json) =>
@@ -18,6 +22,8 @@ class CompleteLessonResult {
         score:    (json['score']    as num).toInt(),
         xpEarned: (json['xp_earned'] as num).toInt(),
         streak:   (json['streak']   as num).toInt(),
+        correctCount: (json['correct_count'] as num?)?.toInt(),
+        totalCount:   (json['total_count']   as num?)?.toInt(),
       );
 
   // Skor kategorisi — UI'da kullanılır

@@ -17,7 +17,7 @@ interface ReviewResult {
 
 function extractJSON(text: string) {
   let cleaned = text.trim()
-  
+
   // Remove markdown code blocks if present
   if (cleaned.startsWith('```json')) {
     cleaned = cleaned.replace(/^```json/, '').replace(/```$/, '').trim()
@@ -29,11 +29,11 @@ function extractJSON(text: string) {
     return JSON.parse(cleaned)
   } catch (initialError: any) {
     console.warn('AI Review JSON parse failed, attempting recovery...', initialError.message)
-    
+
     // Find first { and last }
     const firstBrace = cleaned.indexOf('{')
     const lastBrace = cleaned.lastIndexOf('}')
-    
+
     if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
       const jsonContent = cleaned.substring(firstBrace, lastBrace + 1)
       try {
@@ -44,7 +44,7 @@ function extractJSON(text: string) {
         const openBraces = (attempt.match(/\{/g) || []).length
         const closeBraces = (attempt.match(/\}/g) || []).length
         for (let i = 0; i < (openBraces - closeBraces); i++) attempt += '}'
-        
+
         try {
           return JSON.parse(attempt)
         } catch {
@@ -77,14 +77,14 @@ DOĞRU CEVAP: ${question.correct_option}
 AÇIKLAMA: ${question.explanation ?? '(yok)'}`
 
   try {
-    const model = genAI.getGenerativeModel({ 
-        model: 'gemini-flash-latest',
-        systemInstruction: AI_REVIEW_SYSTEM,
-        generationConfig: { 
-          responseMimeType: "application/json",
-          maxOutputTokens: 1024,
-          temperature: 0.2 // More deterministic for review
-        }
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-flash-latest',
+      systemInstruction: AI_REVIEW_SYSTEM,
+      generationConfig: {
+        responseMimeType: "application/json",
+        maxOutputTokens: 1024,
+        temperature: 0.2 // More deterministic for review
+      }
     })
 
     const result = await callWithRetry(() => model.generateContent(userContent))
@@ -99,7 +99,7 @@ AÇIKLAMA: ${question.explanation ?? '(yok)'}`
   }
 }
 
-const DRAFT_THRESHOLD        = 0.85  // ≥ bu → draft (normal)
+const DRAFT_THRESHOLD = 0.85  // ≥ bu → draft (normal)
 const DRAFT_FLAGGED_THRESHOLD = 0.60  // ≥ bu ama < 0.85 → draft_flagged
 
 export async function runAIReview(jobId: string): Promise<{

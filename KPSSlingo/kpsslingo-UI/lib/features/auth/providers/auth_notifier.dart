@@ -1,6 +1,11 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kpsslingo/shared/providers/supabase_provider.dart';
+import 'package:kpsslingo/features/home/providers/home_providers.dart';
+import 'package:kpsslingo/features/profile/providers/profile_provider.dart';
+import 'package:kpsslingo/shared/providers/hearts_provider.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error, verificationPending }
 
@@ -25,13 +30,14 @@ class AuthState {
 }
 
 final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.watch(supabaseClientProvider));
+  return AuthNotifier(ref.watch(supabaseClientProvider), ref);
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final SupabaseClient _supabase;
+  final Ref _ref;
 
-  AuthNotifier(this._supabase) : super(const AuthState());
+  AuthNotifier(this._supabase, this._ref) : super(const AuthState());
 
   Future<void> signIn(String email, String password) async {
     state = state.copyWith(status: AuthStatus.loading);
@@ -53,7 +59,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (e.message.toLowerCase().contains('email not confirmed')) {
         state = state.copyWith(status: AuthStatus.verificationPending, errorMessage: 'Lütfen e-posta adresinizi doğrulayın.');
       } else {
-        state = state.copyWith(status: AuthStatus.error, errorMessage: e.message);
+        state = state.copyWith(status: AuthStatus.error, errorMessage: _toTurkishAuthError(e.message));
       }
     } catch (e) {
       state = state.copyWith(status: AuthStatus.error, errorMessage: 'Beklenmedik bir hata oluştu');
@@ -66,6 +72,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: kIsWeb ? null : 'kpsslingo://auth-callback',
         data: {
           'username': username,
           'target_exam': targetExam,
@@ -85,9 +92,44 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  String _toTurkishAuthError(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('invalid login credentials') || lower.contains('invalid credentials')) {
+      return 'E-posta veya şifre hatalı.';
+    }
+    if (lower.contains('email not confirmed')) {
+      return 'E-posta adresiniz henüz doğrulanmamış.';
+    }
+    if (lower.contains('user not found')) {
+      return 'Bu e-posta adresiyle kayıtlı bir hesap bulunamadı.';
+    }
+    if (lower.contains('too many requests') || lower.contains('rate limit')) {
+      return 'Çok fazla deneme yapıldı. Lütfen biraz bekleyin.';
+    }
+    if (lower.contains('network') || lower.contains('connection')) {
+      return 'Bağlantı hatası. İnternet bağlantınızı kontrol edin.';
+    }
+    return 'Giriş başarısız. Lütfen tekrar deneyin.';
+  }
+
   Future<void> signOut() async {
-    await _supabase.auth.signOut();
-    state = const AuthState(status: AuthStatus.unauthenticated);
+    try {
+      // Performans ve Güvenlik: Cache ve State temizliği
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      
+      await _supabase.auth.signOut();
+      
+      // Tüm kullanıcı verisi sağlayan provider'ları sıfırla
+      _ref.invalidate(userProfileProvider);
+      _ref.invalidate(streakProvider);
+      _ref.invalidate(heartsProvider);
+      _ref.invalidate(profileStatsProvider);
+      
+      state = const AuthState(status: AuthStatus.unauthenticated);
+    } catch (_) {
+      state = const AuthState(status: AuthStatus.unauthenticated);
+    }
   }
 
   Future<void> completeOnboarding(DateTime examDate) async {

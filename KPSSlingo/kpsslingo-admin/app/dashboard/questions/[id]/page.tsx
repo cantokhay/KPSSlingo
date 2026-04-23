@@ -13,18 +13,25 @@ export default async function QuestionDetailPage({
   const { id } = await params
   const supabase = await createSupabaseServerClient()
 
-  const { data: question } = await supabase
+  const { data: questionData, error } = await supabase
     .from('questions')
     .select(`
       *,
       question_options(*),
+      question_answers(correct_option),
       lessons ( title, topics ( title ) )
     `)
     .eq('id', id)
     .single()
 
-  if (!question) {
+  if (!questionData || error) {
       notFound()
+  }
+
+  // Doğru şıkkı düzleştirerek formun anlayacağı hale getiriyoruz
+  const question = {
+    ...questionData,
+    correct_option: (questionData as any).question_answers?.[0]?.correct_option ?? null
   }
 
   return (

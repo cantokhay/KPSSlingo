@@ -6,6 +6,7 @@ import { IdleTimerWrapper } from '@/components/idle-timer-wrapper'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { ToastProvider } from '@/components/providers/toast-provider'
 import { PageTransition } from '@/components/page-transition'
+import { AdminSessionGuard } from '@/components/admin-session-guard'
 
 export default async function DashboardLayout({
   children,
@@ -19,13 +20,9 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  const { data: roleData } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .single()
-
-  const dbRole = roleData?.role;
+  // Role check from JWT (app_metadata) - No DB query needed!
+  const dbRole = user.app_metadata?.role;
+  
   if (dbRole !== 'admin' && dbRole !== 'superadmin') {
     redirect('/login')
   }
@@ -41,6 +38,8 @@ export default async function DashboardLayout({
 
   return (
     <IdleTimerWrapper>
+      {/* sessionStorage tabanlı client-side güvenlik katmanı */}
+      <AdminSessionGuard />
       <div className="flex min-h-screen bg-surface-alt font-sans">
         <Sidebar draftCount={draftCount ?? 0} isSuperAdmin={isSuperAdmin} />
         

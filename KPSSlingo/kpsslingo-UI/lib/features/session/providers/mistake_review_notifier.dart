@@ -4,8 +4,13 @@ import '../models/session_state.dart';
 import '../models/question_with_options.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'package:kpsslingo/shared/providers/hearts_provider.dart';
+import 'package:kpsslingo/features/home/providers/home_providers.dart';
+import 'package:kpsslingo/features/home/providers/home_data_provider.dart';
+import 'mistakes_provider.dart';
 
-final mistakeReviewNotifierProvider = StateNotifierProvider.autoDispose<MistakeReviewNotifier, SessionState>((ref) {
+final mistakeReviewNotifierProvider =
+    StateNotifierProvider.autoDispose<MistakeReviewNotifier, SessionState>(
+        (ref) {
   return MistakeReviewNotifier(
     supabase: Supabase.instance.client,
     ref: ref,
@@ -29,14 +34,21 @@ class MistakeReviewNotifier extends StateNotifier<SessionState> {
       final user = ref.read(currentUserProvider);
       if (user == null) throw Exception('Giriş yapılmamış.');
 
+      // Maksimum 15 hata göster (cevaplar hariç)
       final data = await supabase
           .from('user_mistakes')
           .select('questions(*, question_options(*))')
           .eq('user_id', user.id)
-          .order('updated_at', ascending: false);
+          .order('updated_at', ascending: false)
+          .limit(15);
+
 
       final questions = (data as List)
-          .map((e) => QuestionWithOptions.fromJson(e['questions'] as Map<String, dynamic>))
+          .map((e) {
+            if (e['questions'] == null) return null;
+            return QuestionWithOptions.fromJson(e['questions'] as Map<String, dynamic>);
+          })
+          .whereType<QuestionWithOptions>()
           .toList();
 
       if (questions.isEmpty) {
@@ -47,9 +59,24 @@ class MistakeReviewNotifier extends StateNotifier<SessionState> {
         return;
       }
 
+      // GÜVENLİK: Cevapları ayrı bir RPC ile çek
+      final qIds = questions.map((q) => q.id).toList();
+      final answersData = await supabase.rpc('get_session_answers', params: {
+        'p_question_ids': qIds,
+      });
+
+      final List<dynamic> answersList = answersData as List<dynamic>;
+      final updatedQuestions = questions.map((q) {
+        final ans = answersList.firstWhere((a) => a['question_id'] == q.id, orElse: () => null);
+        if (ans != null) {
+          return q.copyWith(correctOption: ans['correct_option'] as String);
+        }
+        return q;
+      }).toList();
+
       state = state.copyWith(
         phase: SessionPhase.question,
-        questions: questions,
+        questions: updatedQuestions,
         currentIndex: 0,
       );
     } catch (e) {
@@ -72,49 +99,66 @@ class MistakeReviewNotifier extends StateNotifier<SessionState> {
       isCorrect: isCorrect,
     );
 
-    // Can & Hata Logic
+    final record = AnswerRecord(
+      questionId: question.id,
+      selectedOption: option,
+      isCorrect: isCorrect,
+      timeSpentMs: 0,
+    );
+    state = state.copyWith(answers: [...state.answers, record]);
+
     if (!isCorrect) {
       await ref.read(heartsProvider.notifier).useHeart();
-      // Sayacı sıfırla
-      await supabase.from('user_mistakes').update({
-        'consecutive_correct_count': 0,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('question_id', question.id).eq('user_id', ref.read(currentUserProvider)!.id);
-    } else {
-      // Doğruysa sayacı artır veya sil
-      final user = ref.read(currentUserProvider)!;
-      final existingMistake = await supabase
-          .from('user_mistakes')
-          .select('id, consecutive_correct_count')
-          .eq('user_id', user.id)
-          .eq('question_id', question.id)
-          .single();
-
-      final count = (existingMistake['consecutive_correct_count'] as int) + 1;
-      if (count >= 2) {
-        await supabase.from('user_mistakes').delete().eq('id', existingMistake['id']);
-      } else {
-        await supabase.from('user_mistakes').update({
-          'consecutive_correct_count': count,
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('id', existingMistake['id']);
-      }
     }
   }
 
   void nextQuestion() {
     if (state.phase != SessionPhase.feedback) return;
+    final nextIndex = state.currentIndex + 1;
 
-    if (state.isLastQuestion) {
-      // Bittiğinde Home'a dön (UI tarafında halledilecek veya burada state set edilecek)
-      state = state.copyWith(phase: SessionPhase.submitting); // Mock bitti state'i
-    } else {
-      state = state.copyWith(
-        phase: SessionPhase.question,
-        currentIndex: state.currentIndex + 1,
-        selectedOption: null,
-        isCorrect: null,
-      );
+    if (nextIndex >= state.questions.length) {
+      _completeReview();
+      return;
+    }
+
+    state = state.copyWith(
+      phase: SessionPhase.question,
+      currentIndex: nextIndex,
+      selectedOption: null,
+      isCorrect: null,
+    );
+  }
+
+  Future<void> _completeReview() async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) {
+      state = state.copyWith(phase: SessionPhase.summary);
+      return;
+    }
+
+    state = state.copyWith(phase: SessionPhase.submitting);
+
+    try {
+      // Atomik RPC kullanımı
+      if (state.answers.isNotEmpty) {
+        await supabase.rpc('complete_mistake_review', params: {
+          'p_user_id': user.id,
+          'p_answers': state.answers.map((a) => a.toJson()).toList(),
+        });
+      }
+
+      ref.invalidate(userProfileProvider);
+      ref.invalidate(mistakesCountProvider);
+      ref.invalidate(streakProvider);
+      
+      Future.microtask(() {
+        ref.invalidate(dailyQuestProvider);
+        ref.invalidate(dailyXpProvider);
+      });
+
+      state = state.copyWith(phase: SessionPhase.summary);
+    } catch (e) {
+      state = state.copyWith(phase: SessionPhase.summary);
     }
   }
 

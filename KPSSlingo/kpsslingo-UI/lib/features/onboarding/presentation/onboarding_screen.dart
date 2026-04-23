@@ -6,6 +6,7 @@ import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
 import 'package:kpsslingo/core/theme/app_text_styles.dart';
 import 'package:kpsslingo/core/theme/gaps.dart';
+import '../../../../shared/widgets/app_date_picker.dart';
 import '../../auth/providers/auth_notifier.dart';
 import '../../home/providers/home_providers.dart';
 
@@ -19,7 +20,8 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _controller = PageController();
   bool _isLastPage = false;
-  DateTime _selectedDate = DateTime.now().add(const Duration(days: 90)); // Default fallback
+  bool _isSubmitting = false;
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 90));
   bool _dateInitialized = false;
 
   final Map<String, DateTime> _defaultExamDates = {
@@ -43,6 +45,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       title: 'Serini Koru, Zirveye Çık',
       description: 'Her gün çalışarak serini devam ettir, XP kazan ve liderlik tablosunda yerini al!',
       icon: '🔥',
+    ),
+    _OnboardingData(
+      title: 'Matematik İçin Hazır Mısın?',
+      description: 'Matematik sorularını çözerken yanında kağıt ve kalem bulundurman öğrenme kaliteni artıracaktır.',
+      icon: '📓✏️',
     ),
   ];
 
@@ -87,11 +94,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () async {
+                    onPressed: _isSubmitting ? null : () async {
                       if (_isLastPage) {
-                        await ref.read(authNotifierProvider.notifier).completeOnboarding(_selectedDate);
-                        ref.invalidate(userProfileProvider);
-                        if (mounted) context.go('/home');
+                        setState(() => _isSubmitting = true);
+                        try {
+                          await ref.read(authNotifierProvider.notifier).completeOnboarding(_selectedDate);
+                          // Invalidate only what's necessary to refresh the state
+                          ref.invalidate(userProfileProvider);
+                          
+                          // Wait a bit for the provider to update its cache
+                          await ref.read(userProfileProvider.future);
+                          
+                          if (mounted) {
+                            context.go('/home');
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            setState(() => _isSubmitting = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Bir hata oluştu, lütfen tekrar deneyin.')),
+                            );
+                          }
+                        }
                       } else {
                         // Eğer son sayfaya (tarih seçimi) geçiyorsak, profil bilgisine göre tarihi init et
                         if (_controller.page?.round() == _pages.length - 1 && !_dateInitialized) {
@@ -117,10 +141,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
                       ),
                     ),
-                    child: Text(
-                      _isLastPage ? 'HEMEN BAŞLA' : 'SONRAKİ',
-                      style: AppTextStyles.labelBold,
-                    ),
+                    child: _isSubmitting 
+                        ? const SizedBox(
+                            width: 24, 
+                            height: 24, 
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            _isLastPage ? 'HEMEN BAŞLA' : 'SONRAKİ',
+                            style: AppTextStyles.labelBold,
+                          ),
                   ),
                 ),
               ],
@@ -194,22 +224,12 @@ class _DateSelectionPage extends StatelessWidget {
           
           GestureDetector(
             onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
+              final picked = await AppDatePicker.show(
+                context,
                 initialDate: selectedDate,
                 firstDate: DateTime.now(),
                 lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                builder: (context, child) {
-                  return Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: ColorScheme.fromSeed(
-                        seedColor: AppColors.primary,
-                        primary: AppColors.primary,
-                      ),
-                    ),
-                    child: child!,
-                  );
-                },
+                title: 'Sınav Tarihini Seç',
               );
               if (picked != null) onDateChanged(picked);
             },

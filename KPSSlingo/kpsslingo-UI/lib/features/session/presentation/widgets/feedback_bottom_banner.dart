@@ -6,15 +6,14 @@ import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
 import 'package:kpsslingo/core/theme/app_text_styles.dart';
 import 'package:kpsslingo/core/theme/gaps.dart';
-import 'package:kpsslingo/shared/providers/supabase_provider.dart';
 
 class FeedbackBottomBanner extends ConsumerStatefulWidget {
   final bool isCorrect;
   final String? explanation;
   final VoidCallback onNext;
   final bool isLast;
-  
-  // AI Deep Dive için gereken veriler
+
+  // AI Deep Dive için gereken veriler (ileride kullanılacak)
   final String questionBody;
   final String correctAnswer;
   final String selectedAnswer;
@@ -36,16 +35,14 @@ class FeedbackBottomBanner extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<FeedbackBottomBanner> createState() => _FeedbackBottomBannerState();
+  ConsumerState<FeedbackBottomBanner> createState() =>
+      _FeedbackBottomBannerState();
 }
 
 class _FeedbackBottomBannerState extends ConsumerState<FeedbackBottomBanner>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<Offset> _slide;
-  
-  String? _deepDiveText;
-  bool _isLoadingDeepDive = false;
 
   @override
   void initState() {
@@ -61,29 +58,13 @@ class _FeedbackBottomBannerState extends ConsumerState<FeedbackBottomBanner>
     _ctrl.forward();
   }
 
-  Future<void> _fetchDeepDive() async {
-    setState(() => _isLoadingDeepDive = true);
-    try {
-      final supabase = ref.read(supabaseClientProvider);
-      final response = await supabase.functions.invoke(
-        'generate-deep-dive',
-        body: {
-          'questionBody': widget.questionBody,
-          'correctAnswer': widget.correctAnswer,
-          'selectedAnswer': widget.selectedAnswer,
-        },
-      );
-      
-      if (response.data != null) {
-        setState(() => _deepDiveText = response.data['text']);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Açıklama getirilemedi: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoadingDeepDive = false);
-    }
+  void _showComingSoonSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Bu özellik yakında aktif olacak.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -96,8 +77,7 @@ class _FeedbackBottomBannerState extends ConsumerState<FeedbackBottomBanner>
   Widget build(BuildContext context) {
     final isCorrect = widget.isCorrect;
     final bannerColor = isCorrect ? AppColors.success : AppColors.error;
-    
-    // Neumorphic ve Cam Efekti Renkleri
+
     final bgColor = isCorrect
         ? const Color(0xFFF0FFF4).withOpacity(0.9)
         : const Color(0xFFFFF5F5).withOpacity(0.9);
@@ -116,7 +96,9 @@ class _FeedbackBottomBannerState extends ConsumerState<FeedbackBottomBanner>
             ),
             decoration: BoxDecoration(
               color: bgColor,
-              border: Border(top: BorderSide(color: bannerColor.withOpacity(0.3), width: 1.5)),
+              border: Border(
+                  top: BorderSide(
+                      color: bannerColor.withOpacity(0.3), width: 1.5)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -138,7 +120,9 @@ class _FeedbackBottomBannerState extends ConsumerState<FeedbackBottomBanner>
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        isCorrect ? Icons.check_rounded : Icons.close_rounded,
+                        isCorrect
+                            ? Icons.check_rounded
+                            : Icons.close_rounded,
                         color: bannerColor,
                         size: 20,
                       ),
@@ -152,42 +136,43 @@ class _FeedbackBottomBannerState extends ConsumerState<FeedbackBottomBanner>
                       ),
                     ),
                     const Spacer(),
-                    if (widget.onCustomAction != null && widget.customActionLabel != null)
+                    // customAction: AI analiz — şu an aktif değil
+                    if (widget.onCustomAction != null &&
+                        widget.customActionLabel != null)
                       TextButton(
-                        onPressed: widget.onCustomAction,
-                        child: Text(widget.customActionLabel!, style: TextStyle(color: bannerColor, fontWeight: FontWeight.bold)),
+                        onPressed: _showComingSoonSnackBar,
+                        child: Text(
+                          widget.customActionLabel!,
+                          style: TextStyle(
+                            color: bannerColor.withOpacity(0.5),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                   ],
                 ),
                 Gaps.md,
-                if (_deepDiveText != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(AppDimensions.md),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                      border: Border.all(color: bannerColor.withOpacity(0.1)),
-                    ),
-                    child: Text(
-                      _deepDiveText!,
-                      style: AppTextStyles.bodyMedium.copyWith(height: 1.5, color: Colors.black87),
-                    ),
-                  ),
-                  Gaps.md,
-                ] else if (widget.explanation != null) ...[
+                if (widget.explanation != null) ...[
                   Text(
                     widget.explanation!,
-                    style: AppTextStyles.bodyLarge.copyWith(height: 1.4, color: Colors.black87),
+                    style: AppTextStyles.bodyLarge
+                        .copyWith(height: 1.4, color: Colors.black87),
                   ),
                   Gaps.md,
+                  // "Derinden Öğren" butonu — şu an aktif değil
                   TextButton.icon(
-                    onPressed: _isLoadingDeepDive ? null : _fetchDeepDive,
-                    icon: _isLoadingDeepDive 
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Icon(Icons.psychology_outlined, color: bannerColor, size: 20),
+                    onPressed: _showComingSoonSnackBar,
+                    icon: Icon(
+                      Icons.psychology_outlined,
+                      color: bannerColor.withOpacity(0.5),
+                      size: 20,
+                    ),
                     label: Text(
-                      _isLoadingDeepDive ? 'Yapay Zeka Analiz Ediyor...' : 'Nedenini Derinden Öğren (AI)',
-                      style: TextStyle(color: bannerColor, fontWeight: FontWeight.bold),
+                      'Nedenini Derinden Öğren (AI)',
+                      style: TextStyle(
+                        color: bannerColor.withOpacity(0.5),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -199,7 +184,8 @@ class _FeedbackBottomBannerState extends ConsumerState<FeedbackBottomBanner>
                     foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(56),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                      borderRadius:
+                          BorderRadius.circular(AppDimensions.radiusMd),
                     ),
                   ),
                   child: Text(

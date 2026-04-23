@@ -19,6 +19,8 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(
     reason === 'idle'
       ? '⏰ 15 dakika boyunca işlem yapılmadı. Güvenliğiniz için oturumunuz sonlandırıldı.'
+      : reason === 'session_expired'
+      ? '🔒 Güvenliğiniz için oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.'
       : errorParam === 'unauthorized'
       ? 'Bu hesabın admin yetkisi yok.'
       : null
@@ -69,6 +71,11 @@ function LoginForm() {
     }
 
     router.refresh()
+    // sessionStorage tabanlı ikinci güvenlik katmanı:
+    // tab/tarayıcı kapanınca bu flag silinir ve sonraki açılışta tekrar login istenir.
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('admin_verified', 'true')
+    }
     router.push('/dashboard')
   }
 

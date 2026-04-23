@@ -10,10 +10,10 @@ final searchResultsProvider = FutureProvider.autoDispose<List<Lesson>>((ref) asy
   
   final supabase = ref.watch(supabaseClientProvider);
   
-  // Hem başlıkta hem de açıklamada ara
+  // Hem başlıkta hem açıklamada ara, topic adını join ile getir
   final data = await supabase
       .from('lessons')
-      .select()
+      .select('*, topics(title)')
       .or('title.ilike.%$query%,description.ilike.%$query%')
       .eq('status', 'published')
       .limit(20);

@@ -21,7 +21,8 @@ import 'package:kpsslingo/features/session/presentation/topic_quiz_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
-  ref.watch(userProfileProvider); // Watch profile to trigger redirect when loaded
+  // NOT watching userProfileProvider here to prevent full router rebuilds.
+  // The redirect logic will read the value when needed.
 
   return GoRouter(
     initialLocation: '/home',
@@ -33,11 +34,32 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isLoggedIn && isAuthRoute) return '/home';
 
       // Onboarding Kontrolü
-      if (isLoggedIn && state.matchedLocation == '/home') {
+      if (isLoggedIn && (state.matchedLocation == '/home' || state.matchedLocation == '/')) {
         final profile = ref.read(userProfileProvider).valueOrNull;
+        // Eğer profil henüz yüklenmediyse (AsyncLoading), onboarding sayfasına atmak yerine
+        // beklemeyi tercih edebiliriz veya yükleme durumunu kontrol edebiliriz.
         if (profile != null && !profile.onboardingComplete) {
           return '/onboarding';
         }
+      }
+
+      // Authenticated kullanıcı için izin verilen rotalar dışına çıkmayı engelle
+      if (isLoggedIn) {
+        const allowedPrefixes = [
+          '/home',
+          '/search',
+          '/leaderboard',
+          '/profile',
+          '/lesson/',
+          '/result',
+          '/topic-quiz/',
+          '/mistake-review',
+          '/level-up',
+          '/onboarding',
+        ];
+        final loc = state.matchedLocation;
+        final isAllowed = allowedPrefixes.any((p) => loc == p || loc.startsWith(p));
+        if (!isAllowed) return '/home';
       }
 
       return null;

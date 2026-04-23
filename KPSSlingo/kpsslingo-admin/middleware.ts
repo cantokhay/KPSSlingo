@@ -50,16 +50,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Role check
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
+    // Role check from JWT (app_metadata) - No DB query needed!
+    const role = user.app_metadata?.role
 
-    const dbRole = roleData?.role
-
-    if (dbRole !== 'admin' && dbRole !== 'superadmin') {
+    if (role !== 'admin' && role !== 'superadmin') {
       // Sign out and redirect if not admin/superadmin
       await supabase.auth.signOut()
       return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
@@ -68,13 +62,8 @@ export async function middleware(request: NextRequest) {
 
   // Prevent logged in admins from seeing login page
   if (isLoginPage && user) {
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-    const dbRole = roleData?.role
-    if (dbRole === 'admin' || dbRole === 'superadmin') {
+    const role = user.app_metadata?.role
+    if (role === 'admin' || role === 'superadmin') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }

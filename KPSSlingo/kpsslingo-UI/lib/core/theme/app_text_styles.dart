@@ -51,6 +51,10 @@ class AppTextStyles {
     letterSpacing: 0.5,
   );
 
+  static TextStyle get labelSmall => GoogleFonts.plusJakartaSans(
+    fontSize: 11, fontWeight: FontWeight.w500,
+  );
+
   static TextStyle get xpLabel => GoogleFonts.plusJakartaSans(
     fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.xpGold,
   );

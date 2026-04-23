@@ -75,7 +75,12 @@ class SearchScreen extends ConsumerWidget {
                 child: ListTile(
                   leading: const Icon(Icons.play_circle_outline_rounded, color: AppColors.primary),
                   title: Text(lesson.title, style: AppTextStyles.labelBold),
-                  subtitle: Text('${lesson.xpReward} XP', style: AppTextStyles.bodySmall),
+                  subtitle: Text(
+                    lesson.topicName != null
+                        ? '${lesson.topicName} • ${lesson.xpReward} XP'
+                        : '${lesson.xpReward} XP',
+                    style: AppTextStyles.bodySmall,
+                  ),
                   trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
                   onTap: () => context.push('/lesson/${lesson.id}'),
                 ),

@@ -13,8 +13,9 @@ class StatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Doğru sayısı: score * 10 / 100 (10 soruluk seans varsayımı)
-    final correctCount = (result.score / 10).round();
+    // Doğru sayısı ve toplam soru sayısı
+    final total = result.totalCount ?? 15; // Varsayılan 15 (yeni standart)
+    final correct = result.correctCount ?? (result.score * total / 100).round();
 
     return Row(
       children: [
@@ -44,10 +45,10 @@ class StatRow extends StatelessWidget {
           child: StatCard(
             icon: Icons.check_circle_rounded,
             iconColor: AppColors.success,
-            value: '$correctCount/10',
+            value: '$correct/$total',
             label: 'Doğru',
             animateValue: false,
-            targetValue: correctCount,
+            targetValue: correct,
           ),
         ),
       ],

@@ -9,7 +9,10 @@ import 'package:kpsslingo/features/auth/providers/auth_notifier.dart';
 import 'package:kpsslingo/features/profile/providers/profile_provider.dart';
 import 'package:kpsslingo/core/providers/theme_provider.dart';
 import 'package:kpsslingo/core/theme/neumorphic_style.dart';
-import 'package:kpsslingo/features/home/providers/home_providers.dart';
+import '../../../../shared/widgets/app_date_picker.dart';
+import '../../../../shared/widgets/skeleton.dart';
+import '../../../auth/providers/auth_notifier.dart';
+import '../../../../features/home/providers/home_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -21,101 +24,107 @@ class ProfileScreen extends ConsumerWidget {
     final userProfileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          _buildHeader(context, user),
-          SliverPadding(
-            padding: const EdgeInsets.all(AppDimensions.pageHorizontalPadding),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                statsAsync.when(
-                  data: (stats) => _StatsGrid(stats: stats),
-                  loading: () => const _StatsGridSkeleton(),
-                  error: (e, __) => Text('Hata: $e'),
-                ),
-                Gaps.xl,
-                _MenuSection(
-                  title: 'Hesap Ayarları',
-                  items: [
-                    _MenuItem(
-                      icon: Icons.person_outline_rounded, 
-                      label: 'Bilgilerimi Güncelle',
-                      onTap: () => _showComingSoon(context, 'Profil Güncelleme'),
-                    ),
-                    _MenuItem(
-                      icon: Icons.school_outlined, 
-                      label: 'Sınav Hedefim',
-                      trailing: userProfileAsync.when(
-                        data: (profile) => Text(
-                          _getLevelLabel(profile?.targetExam),
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
-                        ),
-                        loading: () => const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                        error: (_, __) => const Icon(Icons.error_outline, size: 16, color: AppColors.error),
-                      ),
-                      onTap: () => _showLevelSelection(context, ref, userProfileAsync.valueOrNull?.targetExam),
-                    ),
-                    _MenuItem(
-                      icon: Icons.calendar_month_rounded, 
-                      label: 'Sınav Tarihim',
-                      trailing: userProfileAsync.when(
-                        data: (profile) => Text(
-                          _formatDate(profile?.kpssExamDate),
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
-                        ),
-                        loading: () => const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                        error: (_, __) => const Icon(Icons.error_outline, size: 16, color: AppColors.error),
-                      ),
-                      onTap: () => _showDatePicker(context, ref, userProfileAsync.valueOrNull?.kpssExamDate),
-                    ),
-                    _MenuItem(
-                      icon: Icons.notifications_none_rounded, 
-                      label: 'Bildirimler',
-                      onTap: () => _showComingSoon(context, 'Bildirim Ayarları'),
-                    ),
-                    _MenuItem(
-                      icon: Icons.security_rounded, 
-                      label: 'Güvenlik',
-                      onTap: () => _showComingSoon(context, 'Güvenlik Ayarları'),
-                    ),
-                  ],
-                ),
-                Gaps.lg,
-                _MenuSection(
-                  title: 'Uygulama',
-                  items: [
-                    const _DarkModeToggle(),
-                    _MenuItem(
-                      icon: Icons.star_outline_rounded, 
-                      label: 'Uygulamayı Puanla',
-                      onTap: () => _showComingSoon(context, 'Puanlama'),
-                    ),
-                    _MenuItem(
-                      icon: Icons.help_outline_rounded, 
-                      label: 'Yardım & Destek',
-                      onTap: () => _showComingSoon(context, 'Destek'),
-                    ),
-                    _MenuItem(
-                      icon: Icons.info_outline_rounded, 
-                      label: 'Hakkımızda',
-                      onTap: () => _showComingSoon(context, 'Hakkımızda'),
-                    ),
-                  ],
-                ),
-                Gaps.xxl,
-                TextButton.icon(
-                  onPressed: () => ref.read(authNotifierProvider.notifier).signOut(),
-                  icon: const Icon(Icons.logout_rounded, color: AppColors.error),
-                  label: const Text('Çıkış Yap', style: TextStyle(color: AppColors.error)),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.all(AppDimensions.md),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(userProfileProvider);
+          ref.invalidate(profileStatsProvider);
+        },
+        child: CustomScrollView(
+          slivers: [
+            _buildHeader(context, user),
+            SliverPadding(
+              padding: const EdgeInsets.all(AppDimensions.pageHorizontalPadding),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  statsAsync.when(
+                    data: (stats) => _StatsGrid(stats: stats),
+                    loading: () => const _StatsGridSkeleton(),
+                    error: (e, __) => Text('Hata: $e'),
                   ),
-                ),
-                Gaps.xxxl,
-              ]),
+                  Gaps.xl,
+                  _MenuSection(
+                    title: 'Hesap Ayarları',
+                    items: [
+                      _MenuItem(
+                        icon: Icons.person_outline_rounded, 
+                        label: 'Bilgilerimi Güncelle',
+                        onTap: () => _showComingSoon(context, 'Profil Güncelleme'),
+                      ),
+                      _MenuItem(
+                        icon: Icons.school_outlined, 
+                        label: 'Sınav Hedefim',
+                        trailing: userProfileAsync.when(
+                          data: (profile) => Text(
+                            _getLevelLabel(profile?.targetExam),
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+                          ),
+                          loading: () => const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                          error: (_, __) => const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                        ),
+                        onTap: () => _showLevelSelection(context, ref, userProfileAsync.valueOrNull?.targetExam),
+                      ),
+                      _MenuItem(
+                        icon: Icons.calendar_month_rounded, 
+                        label: 'Sınav Tarihim',
+                        trailing: userProfileAsync.when(
+                          data: (profile) => Text(
+                            _formatDate(profile?.kpssExamDate),
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+                          ),
+                          loading: () => const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                          error: (_, __) => const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                        ),
+                        onTap: () => _showDatePicker(context, ref, userProfileAsync.valueOrNull?.kpssExamDate),
+                      ),
+                      _MenuItem(
+                        icon: Icons.notifications_none_rounded, 
+                        label: 'Bildirimler',
+                        onTap: () => _showComingSoon(context, 'Bildirim Ayarları'),
+                      ),
+                      _MenuItem(
+                        icon: Icons.security_rounded, 
+                        label: 'Güvenlik',
+                        onTap: () => _showComingSoon(context, 'Güvenlik Ayarları'),
+                      ),
+                    ],
+                  ),
+                  Gaps.lg,
+                  _MenuSection(
+                    title: 'Uygulama',
+                    items: [
+                      const _DarkModeToggle(),
+                      _MenuItem(
+                        icon: Icons.star_outline_rounded, 
+                        label: 'Uygulamayı Puanla',
+                        onTap: () => _showComingSoon(context, 'Puanlama'),
+                      ),
+                      _MenuItem(
+                        icon: Icons.help_outline_rounded, 
+                        label: 'Yardım & Destek',
+                        onTap: () => _showComingSoon(context, 'Destek'),
+                      ),
+                      _MenuItem(
+                        icon: Icons.info_outline_rounded, 
+                        label: 'Hakkımızda',
+                        onTap: () => _showComingSoon(context, 'Hakkımızda'),
+                      ),
+                    ],
+                  ),
+                  Gaps.xxl,
+                  TextButton.icon(
+                    onPressed: () => ref.read(authNotifierProvider.notifier).signOut(),
+                    icon: const Icon(Icons.logout_rounded, color: AppColors.error),
+                    label: const Text('Çıkış Yap', style: TextStyle(color: AppColors.error)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.all(AppDimensions.md),
+                    ),
+                  ),
+                  Gaps.xxxl,
+                ]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -215,22 +224,12 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   void _showDatePicker(BuildContext context, WidgetRef ref, DateTime? currentDate) async {
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await AppDatePicker.show(
+      context,
       initialDate: currentDate ?? DateTime.now().add(const Duration(days: 90)),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)), // Geçmiş sınavlar için de bakılabilir belki
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: AppColors.primary,
-              primary: AppColors.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      title: 'Sınav Tarihini Güncelle',
     );
 
     if (picked != null) {
@@ -251,19 +250,79 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: AppDimensions.md,
-      crossAxisSpacing: AppDimensions.md,
-      childAspectRatio: 1.6,
-      children: [
-        _StatCard(label: 'TOPLAM XP', value: '${stats['xp']}', icon: Icons.bolt_rounded, color: Colors.amber),
-        _StatCard(label: 'SEVİYE', value: '${stats['level']}', icon: Icons.auto_awesome_rounded, color: Colors.purple),
-        _StatCard(label: 'DERSLER', value: '${stats['completed_lessons']}', icon: Icons.menu_book_rounded, color: Colors.blue),
-        _StatCard(label: 'SERİ', value: '${stats['streak']} Gün', icon: Icons.local_fire_department_rounded, color: Colors.orange),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLargeScreen = constraints.maxWidth > 600;
+        final crossAxisCount = isLargeScreen ? 4 : 2;
+        // Adjust aspect ratio to give more vertical space on narrow screens
+        final aspectRatio = isLargeScreen ? 2.5 : 1.7;
+        
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: AppDimensions.sm,
+          crossAxisSpacing: AppDimensions.sm,
+          childAspectRatio: aspectRatio,
+          children: [
+            _StatCard(label: 'TOPLAM XP', value: '${stats['xp']}', icon: Icons.bolt_rounded, color: Colors.amber),
+            _StatCard(label: 'SEVİYE', value: '${stats['level']}', icon: Icons.auto_awesome_rounded, color: Colors.purple),
+            _StatCard(label: 'DERSLER', value: '${stats['completed_lessons']}', icon: Icons.menu_book_rounded, color: Colors.blue),
+            _StatCard(label: 'SERİ', value: '${stats['streak']} Gün', icon: Icons.local_fire_department_rounded, color: Colors.orange),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _StatCard({required this.label, required this.value, required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.sm,
+        vertical: AppDimensions.md,
+      ),
+      decoration: NeumorphicStyle.containerDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              Gaps.w(4),
+              Expanded(
+                child: Text(
+                  label, 
+                  style: AppTextStyles.labelBold.copyWith(
+                    fontSize: 9, 
+                    color: AppColors.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimensions.xs),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value, 
+              style: AppTextStyles.headlineSmall.copyWith(fontSize: 18),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -285,43 +344,6 @@ class _DarkModeToggle extends ConsumerWidget {
         value: isDark,
         onChanged: (_) => ref.read(themeProvider.notifier).toggleDarkLight(isDark),
         activeColor: AppColors.primary,
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _StatCard({required this.label, required this.value, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.md),
-      decoration: NeumorphicStyle.containerDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              Gaps.w(4),
-              Text(
-                label, 
-                style: AppTextStyles.labelBold.copyWith(
-                  fontSize: 10, 
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(value, style: AppTextStyles.headlineSmall),
-        ],
       ),
     );
   }

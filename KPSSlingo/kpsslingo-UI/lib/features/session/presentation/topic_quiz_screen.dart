@@ -49,13 +49,16 @@ class _TopicQuizScreenState extends ConsumerState<TopicQuizScreen> with SingleTi
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listenManual(topicQuizResultProvider, (_, result) {
         if (result != null) {
+          final sessionState = ref.read(topicQuizNotifierProvider(widget.topicId));
           context.go('/result', extra: {
             'result': {
               'score': result.score,
               'xp_earned': result.xpEarned,
               'streak': result.streak,
+              'correct_count': (result.score * sessionState.totalQuestions / 100).round(),
+              'total_count': sessionState.totalQuestions,
             },
-            'lesson_id': 'topic-${widget.topicId}', // Use a virtual ID for result screen
+            'lesson_id': 'topic-${widget.topicId}', 
           });
         }
       });
@@ -85,8 +88,8 @@ class _TopicQuizScreenState extends ConsumerState<TopicQuizScreen> with SingleTi
     });
 
     ref.listen(heartsProvider, (previous, next) {
-      if (next != null && next.hearts == 0) {
-        _showHeartsOutDialog(context);
+      if (next != null && next.hearts == 0 && (previous == null || previous.hearts > 0)) {
+        HeartsOutDialog.show(context, ref);
       }
     });
 
@@ -129,6 +132,7 @@ class _TopicQuizScreenState extends ConsumerState<TopicQuizScreen> with SingleTi
                       topicId: widget.topicId,
                     ),
                   SessionPhase.submitting => const _SubmittingView(key: ValueKey('submitting')),
+                  SessionPhase.summary    => const _SubmittingView(key: ValueKey('summary')),
                   SessionPhase.error      => _ErrorView(
                       key: const ValueKey('error'),
                       message: sessionState.errorMessage ?? 'Bir hata oluştu.',
@@ -192,7 +196,6 @@ class _QuestionView extends ConsumerWidget {
             SessionHeader(
               currentIndex: state.currentIndex,
               total: state.totalQuestions,
-              lessonId: 'topic-$topicId',
             ),
             Gaps.lg,
             Expanded(
@@ -245,7 +248,6 @@ class _QuestionView extends ConsumerWidget {
                       child: OptionTile(
                         option: option,
                         selectedOption: state.selectedOption,
-                        lessonId: 'topic-$topicId',
                         onTap: () => ref.read(topicQuizNotifierProvider(topicId).notifier).selectOption(option.label),
                       ),
                     )),
@@ -284,7 +286,6 @@ class _FeedbackView extends ConsumerWidget {
             SessionHeader(
               currentIndex: state.currentIndex,
               total: state.totalQuestions,
-              lessonId: 'topic-$topicId',
             ),
             Gaps.lg,
             Expanded(
@@ -316,7 +317,10 @@ class _FeedbackView extends ConsumerWidget {
               questionBody: question.body,
               correctAnswer: question.correctOption,
               selectedAnswer: state.selectedOption!,
-              onNext: () => ref.read(topicQuizNotifierProvider(topicId).notifier).nextQuestion(),
+              onNext: () {
+                FocusScope.of(context).unfocus();
+                ref.read(topicQuizNotifierProvider(topicId).notifier).nextQuestion();
+              },
               isLast: state.isLastQuestion,
             ),
           ],

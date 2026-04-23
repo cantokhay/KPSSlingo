@@ -4,7 +4,10 @@
   "description": "Backend scripts for KPSSlingo",
   "main": "index.js",
   "scripts": {
-    "generate:questions": "ts-node scripts/generate-questions.ts"
+    "generate:questions": "ts-node scripts/generate-questions.ts",
+    "dev": "concurrently --names \"ADMIN,FLUTTER\" --prefix-colors \"cyan,magenta\" \"npm run dev:admin\" \"npm run dev:flutter\"",
+    "dev:admin": "cd kpsslingo-admin && npm run dev",
+    "dev:flutter": "cd kpsslingo-UI && flutter run -d chrome --dart-define-from-file=../.env.json"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
@@ -14,6 +17,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
+    "concurrently": "^9.2.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.3"
   }

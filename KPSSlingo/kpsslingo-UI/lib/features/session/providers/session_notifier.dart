@@ -8,6 +8,7 @@ import '../models/complete_lesson_result.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'package:kpsslingo/shared/providers/hearts_provider.dart';
 import '../../home/providers/home_providers.dart';
+import '../../home/providers/home_data_provider.dart';
 
 final sessionNotifierProvider = StateNotifierProvider.autoDispose
     .family<SessionNotifier, SessionState, String>(
@@ -70,9 +71,24 @@ class SessionNotifier extends StateNotifier<SessionState> {
       allQuestions.shuffle();
       final questions = allQuestions.take(15).toList();
 
+      // GÜVENLİK: Cevapları seans başladığında ayrı bir RPC ile çek
+      final questionIds = questions.map((q) => q.id).toList();
+      final answersData = await supabase.rpc('get_session_answers', params: {
+        'p_question_ids': questionIds,
+      });
+
+      final List<dynamic> answersList = answersData as List<dynamic>;
+      final updatedQuestions = questions.map((q) {
+        final ans = answersList.firstWhere((a) => a['question_id'] == q.id, orElse: () => null);
+        if (ans != null) {
+          return q.copyWith(correctOption: ans['correct_option'] as String);
+        }
+        return q;
+      }).toList();
+
       state = state.copyWith(
         phase: SessionPhase.question,
-        questions: questions,
+        questions: updatedQuestions,
         currentIndex: 0,
       );
       _startQuestionTimer();
@@ -98,47 +114,30 @@ class SessionNotifier extends StateNotifier<SessionState> {
       timeSpentMs: timeSpentMs,
     );
 
-    // Can Düşürme & Hata Kaydı (Arka planda)
-    _handleResult(question.id, option, isCorrect);
+    // Can Düşürme (Hata kaydı artık DB tetikleyicisi tarafından yapılıyor)
+    await _handleResult(question.id, option, isCorrect);
   }
 
   Future<void> _handleResult(String questionId, String selectedOption, bool isCorrect) async {
     final user = ref.read(currentUserProvider);
     if (user == null) return;
 
+    // Anında veritabanına işle (Hata takibi ve yarıda bırakanlar için)
+    try {
+      await supabase.rpc('log_single_answer', params: {
+        'p_question_id': questionId,
+        'p_lesson_id': lessonId,
+        'p_selected_option': selectedOption,
+        'p_is_correct': isCorrect,
+        'p_time_spent_ms': state.timeSpentMs,
+      });
+    } catch (e) {
+      // Sessiz hata (internet kesintisi vs)
+    }
+
     if (!isCorrect) {
-      // 1. Can düşür
+      // Can düşür
       await ref.read(heartsProvider.notifier).useHeart();
-
-      // 2. Hatayı kaydet/güncelle
-      await supabase.from('user_mistakes').upsert({
-        'user_id': user.id,
-        'question_id': questionId,
-        'last_wrong_answer': selectedOption,
-        'consecutive_correct_count': 0,
-        'updated_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id, question_id');
-    } else {
-      // Doğruysa hata listesini kontrol et
-      final existingMistake = await supabase
-          .from('user_mistakes')
-          .select('id, consecutive_correct_count')
-          .eq('user_id', user.id)
-          .eq('question_id', questionId)
-          .maybeSingle();
-
-      if (existingMistake != null) {
-        final count = (existingMistake['consecutive_correct_count'] as int) + 1;
-        if (count >= 2) {
-          // 2 kere üst üste doğru yapıldı, hatayı sil
-          await supabase.from('user_mistakes').delete().eq('id', existingMistake['id']);
-        } else {
-          // Sayacı artır
-          await supabase.from('user_mistakes').update({
-            'consecutive_correct_count': count,
-          }).eq('id', existingMistake['id']);
-        }
-      }
     }
   }
 
@@ -192,10 +191,19 @@ class SessionNotifier extends StateNotifier<SessionState> {
         response.data as Map<String, dynamic>,
       );
 
-      ref.invalidate(streakProvider);
+      // Agresif invalidasyonları grupla veya debouncela
+      // Burada sadece en kritik olanları tetikliyoruz, geri kalanı ana ekran (Home) 
+      // aktif olduğunda (watch sayesinde) güncellenecek.
       ref.invalidate(userProfileProvider);
-      ref.invalidate(nextLessonProvider);
-      ref.invalidate(topicProgressProvider);
+      ref.invalidate(streakProvider);
+      
+      // Delay ile diğerlerini arka planda tazele
+      Future.microtask(() {
+        ref.invalidate(nextLessonProvider);
+        ref.invalidate(topicProgressProvider);
+        ref.invalidate(dailyQuestProvider);
+        ref.invalidate(dailyXpProvider);
+      });
 
       ref.read(sessionResultProvider.notifier).state = result;
 

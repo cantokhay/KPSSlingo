@@ -13,14 +13,8 @@ async function requireAdmin() {
   
   if (!user) throw new Error('Oturum bulunamadı')
 
-  // Veritabanından rolü kontrol et
-  const { data: roleData } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .single()
-
-  const role = roleData?.role || (user.user_metadata?.role as string)
+  // Rolü doğrudan JWT'den (app_metadata) kontrol et
+  const role = user.app_metadata?.role
   
   if (role !== 'admin' && role !== 'superadmin') {
     throw new Error('Bu işlem için yetkiniz yok')
@@ -105,11 +99,22 @@ export async function updateQuestion(
     .update({
       ...(payload.body && { body: payload.body }),
       ...(payload.explanation !== undefined && { explanation: payload.explanation }),
-      ...(payload.correct_option && { correct_option: payload.correct_option }),
     })
     .eq('id', questionId)
 
   if (qError) throw new Error('Soru güncellenemedi: ' + qError.message)
+
+  // Doğru şıkkı güvenli tabloya kaydet
+  if (payload.correct_option) {
+    const { error: aError } = await supabase
+      .from('question_answers')
+      .upsert({
+        question_id: questionId,
+        correct_option: payload.correct_option,
+      })
+
+    if (aError) throw new Error('Doğru şık güncellenemedi: ' + aError.message)
+  }
 
   if (payload.options) {
     for (const opt of payload.options) {

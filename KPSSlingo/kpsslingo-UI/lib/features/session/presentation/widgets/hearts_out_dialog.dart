@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kpsslingo/shared/providers/hearts_provider.dart';
+import 'package:kpsslingo/features/home/providers/home_providers.dart';
 import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
 import 'package:kpsslingo/core/theme/app_text_styles.dart';
@@ -9,6 +10,36 @@ import 'package:kpsslingo/core/theme/gaps.dart';
 
 class HeartsOutDialog extends ConsumerWidget {
   const HeartsOutDialog({super.key});
+
+  static bool _isShowing = false;
+
+  static Future<void> show(BuildContext context, WidgetRef ref) async {
+    if (_isShowing) return;
+    
+    // Son bir kontrol: Canlar gerçekten 0 mı? 
+    // (Yarış durumlarını önlemek için)
+    final currentHearts = ref.read(heartsProvider)?.hearts ?? 15;
+    if (currentHearts > 0) return;
+
+    _isShowing = true;
+    try {
+      await showGeneralDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierLabel: 'HeartsOut',
+        transitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (context, anim1, anim2) => const HeartsOutDialog(),
+        transitionBuilder: (context, anim1, anim2, child) {
+          return ScaleTransition(
+            scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+            child: FadeTransition(opacity: anim1, child: child),
+          );
+        },
+      );
+    } finally {
+      _isShowing = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,7 +52,32 @@ class HeartsOutDialog extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('💔', style: TextStyle(fontSize: 64)),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                const Text('💔', style: TextStyle(fontSize: 64)),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Text(
+                      '${ref.watch(heartsProvider)?.hearts ?? 0}/15',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             Gaps.md,
             Text('Canın Bitti!', style: AppTextStyles.headlineSmall),
             Gaps.sm,
@@ -35,34 +91,48 @@ class HeartsOutDialog extends ConsumerWidget {
             // Refill with XP
             _RefillOption(
               title: 'XP ile Doldur',
-              subtitle: '500 XP harcayarak tüm canlarını yenile',
+              subtitle: '5 XP harcayarak tüm canlarını yenile',
               icon: Icons.flash_on_rounded,
               color: AppColors.xpGold,
               onTap: () async {
-                await ref.read(heartsProvider.notifier).refillWithXp();
-                if (context.mounted) Navigator.pop(context);
+                final heartsState = ref.read(heartsProvider);
+                if (heartsState != null && heartsState.hearts >= 15) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Canların zaten dolu!')),
+                  );
+                  if (context.mounted) Navigator.pop(context);
+                  return;
+                }
+
+                final success = await ref.read(heartsProvider.notifier).refillWithXp();
+                
+                if (success) {
+                  if (context.mounted) Navigator.pop(context);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Yetersiz XP!')),
+                    );
+                  }
+                }
               },
             ),
             Gaps.md,
             
-            // Refill with Ad (Simulation)
+            // Refill with Ad — şu an aktif değil
             _RefillOption(
               title: 'Reklam İzle',
               subtitle: 'Kısa bir video izle ve can kazan',
               icon: Icons.play_circle_fill_rounded,
               color: AppColors.primary,
-              onTap: () async {
-                // Show loading
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => const Center(child: CircularProgressIndicator()),
+              onTap: () {
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Reklam özelliği yakında aktif olacak.'),
+                    duration: Duration(seconds: 2),
+                  ),
                 );
-                await ref.read(heartsProvider.notifier).refillWithAd();
-                if (context.mounted) {
-                  Navigator.pop(context); // Close loading
-                  Navigator.pop(context); // Close hearts dialog
-                }
               },
             ),
             Gaps.lg,

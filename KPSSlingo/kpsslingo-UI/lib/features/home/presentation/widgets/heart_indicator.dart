@@ -5,7 +5,9 @@ import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_text_styles.dart';
 
 class HeartIndicator extends ConsumerWidget {
-  const HeartIndicator({super.key});
+  final bool isCompact;
+
+  const HeartIndicator({super.key, this.isCompact = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,11 +21,14 @@ class HeartIndicator extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 8 : 12, 
+        vertical: isCompact ? 4 : 8,
+      ),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: isCompact ? Colors.transparent : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        boxShadow: isCompact ? null : [
           // Neumorphic Soft Shadow
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
@@ -44,17 +49,17 @@ class HeartIndicator extends ConsumerWidget {
           Icon(
             hearts == 0 ? Icons.favorite_border_rounded : Icons.favorite_rounded,
             color: isCritical ? AppColors.error : AppColors.primary,
-            size: 20,
+            size: isCompact ? 24 : 20,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Text(
             hearts.toString(),
             style: AppTextStyles.titleSmall.copyWith(
               fontWeight: FontWeight.w900,
-              fontSize: 16,
+              fontSize: isCompact ? 18 : 16,
             ),
           ),
-          if (hearts < kMaxHearts) ...[
+          if (!isCompact && hearts < kMaxHearts) ...[
             const SizedBox(width: 6),
             Container(width: 1, height: 14, color: Colors.grey.withOpacity(0.2)),
             const SizedBox(width: 6),

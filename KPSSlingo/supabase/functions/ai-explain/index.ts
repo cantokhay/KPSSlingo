@@ -15,16 +15,16 @@ Deno.serve(async (req) => {
     const { question, explanation } = await req.json()
     
     const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY')!)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-latest" })
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash-latest",
+      systemInstruction: `Sen bir KPSS eğitim asistanısın. Sana verilen soruları yanlış yapan öğrencilere teşvik edici ve açıklayıcı "mini analizler" yazarsın. Giriş veya sonuç cümlesi ekleme, doğrudan analizi yaz.`
+    })
 
     const prompt = `
-      Sana bir KPSS sorusu ve açıklaması verilecek. 
       Soru: ${question}
       Açıklama: ${explanation}
 
-      Lütfen bu soruyu yanlış yapan bir öğrenciye, konuyu daha iyi kavraması için 2-3 cümlelik "mini bir analiz" yaz. 
-      Analiz; neden bu cevabın doğru olduğunu, konunun kilit noktasını ve öğrencinin bir dahaki sefere neye dikkat etmesi gerektiğini içermeli. 
-      Dil samimi ve teşvik edici olsun. Sadece analizi yaz, giriş veya sonuç cümlesi ekleme.
+      Lütfen bu soruyu yanlış yapan bir öğrenci için 2-3 cümlelik kilit bir analiz yaz.
     `
 
     const result = await model.generateContent(prompt)

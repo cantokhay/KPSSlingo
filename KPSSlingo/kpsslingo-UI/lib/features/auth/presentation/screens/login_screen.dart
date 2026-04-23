@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import '../../providers/auth_notifier.dart';
 import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
 import 'package:kpsslingo/core/theme/app_text_styles.dart';
 import 'package:kpsslingo/core/theme/gaps.dart';
 import 'package:kpsslingo/core/providers/theme_provider.dart';
+
+// Admin paneli URL'si — üretimde kpsslingo.com/admin veya admin subdomain
+const _kAdminUrl = 'http://localhost:3000';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -54,6 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         actions: [
@@ -144,6 +150,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: const Text('Hesap Oluştur', style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ],
+                  ),
+                  Gaps.sm,
+                  TextButton.icon(
+                    onPressed: () => html.window.open(_kAdminUrl, '_blank'),
+                    icon: const Icon(Icons.admin_panel_settings_outlined, size: 16, color: AppColors.textSecondary),
+                    label: Text(
+                      'Admin Paneli',
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                    ),
                   ),
                 ],
               ),

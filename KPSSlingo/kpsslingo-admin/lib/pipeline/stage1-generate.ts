@@ -157,7 +157,6 @@ export async function generateQuestionsForLesson(
             lesson_id: lessonId,
             body: q.body,
             explanation: q.explanation,
-            correct_option: q.correct_option,
             status: 'generating',
             source: 'ai_generated',
             ai_model: 'gemini-flash-latest',
@@ -172,6 +171,12 @@ export async function generateQuestionsForLesson(
           totalErrors++
           continue 
         }
+
+        // Insert correct answer into secure table
+        await supabase.from('question_answers').insert({
+          question_id: question.id,
+          correct_option: q.correct_option,
+        })
 
         const optionRecords = Object.entries(q.options).map(([label, body]) => ({
           question_id: question.id,

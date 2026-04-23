@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kpsslingo/core/theme/app_colors.dart';
 import 'package:kpsslingo/core/theme/app_dimensions.dart';
 import 'package:kpsslingo/core/theme/app_text_styles.dart';
 import 'package:kpsslingo/core/theme/gaps.dart';
+import 'package:kpsslingo/features/home/presentation/widgets/heart_indicator.dart';
 
 class SessionHeader extends StatelessWidget {
   final int currentIndex;
   final int total;
-  final String lessonId;
+  /// Kullanıcı X'e basınca çalışacak callback.
+  /// Verilmezse GoRouter üzerinden /home'a gider.
+  final VoidCallback? onClose;
 
   const SessionHeader({
     required this.currentIndex,
     required this.total,
-    required this.lessonId,
+    this.onClose,
+    // Geriye dönük uyumluluk: lessonId artık kullanılmıyor ama parametreyi
+    // eski çağrı yerlerinin derlenmesi için opsiyonel tutuyoruz.
+    @Deprecated('Artık kullanılmıyor') String? lessonId,
     super.key,
   });
 
@@ -27,9 +34,7 @@ class SessionHeader extends StatelessWidget {
           Row(
             children: [
               IconButton(
-                onPressed: () {
-                  Navigator.of(context).maybePop();
-                },
+                onPressed: onClose ?? () => context.go('/home'),
                 icon: const Icon(Icons.close_rounded),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -49,8 +54,10 @@ class SessionHeader extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: value,
                       minHeight: 10,
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      valueColor:
+                          const AlwaysStoppedAnimation(AppColors.primary),
                     ),
                   ),
                 ),
@@ -62,6 +69,9 @@ class SessionHeader extends StatelessWidget {
                 '${currentIndex + 1}/$total',
                 style: AppTextStyles.labelBold,
               ),
+
+              Gaps.w(AppDimensions.sm),
+              const HeartIndicator(isCompact: true),
             ],
           ),
         ],

@@ -49,11 +49,14 @@ class _SessionScreenState extends ConsumerState<SessionScreen> with SingleTicker
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listenManual(sessionResultProvider, (_, result) {
         if (result != null) {
+          final sessionState = ref.read(sessionNotifierProvider(widget.lessonId));
           context.go('/result', extra: {
             'result': {
               'score': result.score,
               'xp_earned': result.xpEarned,
               'streak': result.streak,
+              'correct_count': (result.score * sessionState.totalQuestions / 100).round(),
+              'total_count': sessionState.totalQuestions,
             },
             'lesson_id': widget.lessonId,
           });
@@ -85,8 +88,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen> with SingleTicker
     });
 
     ref.listen(heartsProvider, (previous, next) {
-      if (next != null && next.hearts == 0) {
-        _showHeartsOutDialog(context);
+      if (next != null && next.hearts == 0 && (previous == null || previous.hearts > 0)) {
+        HeartsOutDialog.show(context, ref);
       }
     });
 
@@ -122,13 +125,16 @@ class _SessionScreenState extends ConsumerState<SessionScreen> with SingleTicker
                       state: sessionState,
                       lessonId: widget.lessonId,
                       shakeAnimation: _shakeController,
+                      onClose: () => _showExitDialog(context),
                     ),
                   SessionPhase.feedback   => _FeedbackView(
                       key: ValueKey('f-${sessionState.currentIndex}'),
                       state: sessionState,
                       lessonId: widget.lessonId,
+                      onClose: () => _showExitDialog(context),
                     ),
                   SessionPhase.submitting => const _SubmittingView(key: ValueKey('submitting')),
+                  SessionPhase.summary    => const _SubmittingView(key: ValueKey('summary')),
                   SessionPhase.error      => _ErrorView(
                       key: const ValueKey('error'),
                       message: sessionState.errorMessage ?? 'Bir hata oluştu.',
@@ -170,11 +176,13 @@ class _QuestionView extends StatelessWidget {
   final SessionState state;
   final String lessonId;
   final Animation<double> shakeAnimation;
+  final VoidCallback onClose;
 
   const _QuestionView({
-    required this.state, 
+    required this.state,
     required this.lessonId,
     required this.shakeAnimation,
+    required this.onClose,
     super.key,
   });
 
@@ -192,7 +200,7 @@ class _QuestionView extends StatelessWidget {
             SessionHeader(
               currentIndex: state.currentIndex,
               total: state.totalQuestions,
-              lessonId: lessonId,
+              onClose: onClose,
             ),
             Gaps.lg,
             Expanded(
@@ -246,10 +254,14 @@ class _QuestionView extends StatelessWidget {
                     const Spacer(),
                     ...question.options.map((option) => Padding(
                       padding: const EdgeInsets.only(bottom: AppDimensions.sm),
-                      child: OptionTile(
-                        option: option,
-                        selectedOption: state.selectedOption,
-                        lessonId: lessonId,
+                      child: Consumer(
+                        builder: (context, ref, _) => OptionTile(
+                          option: option,
+                          selectedOption: state.selectedOption,
+                          onTap: () => ref
+                              .read(sessionNotifierProvider(lessonId).notifier)
+                              .selectOption(option.label),
+                        ),
                       ),
                     )),
                     Gaps.md,
@@ -267,7 +279,8 @@ class _QuestionView extends StatelessWidget {
 class _FeedbackView extends ConsumerWidget {
   final SessionState state;
   final String lessonId;
-  const _FeedbackView({required this.state, required this.lessonId, super.key});
+  final VoidCallback onClose;
+  const _FeedbackView({required this.state, required this.lessonId, required this.onClose, super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -284,7 +297,7 @@ class _FeedbackView extends ConsumerWidget {
             SessionHeader(
               currentIndex: state.currentIndex,
               total: state.totalQuestions,
-              lessonId: lessonId,
+              onClose: onClose,
             ),
             Gaps.lg,
             Expanded(
@@ -316,7 +329,10 @@ class _FeedbackView extends ConsumerWidget {
               questionBody: question.body,
               correctAnswer: question.correctOption,
               selectedAnswer: state.selectedOption!,
-              onNext: () => ref.read(sessionNotifierProvider(lessonId).notifier).nextQuestion(),
+              onNext: () {
+                FocusScope.of(context).unfocus();
+                ref.read(sessionNotifierProvider(lessonId).notifier).nextQuestion();
+              },
               isLast: state.isLastQuestion,
             ),
           ],

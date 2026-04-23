@@ -240,59 +240,63 @@ class _WeeklyStreakCalendar extends StatelessWidget {
           builder: (context, constraints) {
             // Ekran genişliğine göre padding ayarla
             final horizontalPadding = constraints.maxWidth < 360 ? 1.0 : 2.0;
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: last7.map((day) {
-                final isActive = lastActivity != null &&
-                    activeFrom != null &&
-                    !day.isBefore(activeFrom) &&
-                    !day.isAfter(lastActivity!.add(const Duration(days: 1)));
+            return FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: last7.map((day) {
+                  final isActive = lastActivity != null &&
+                      activeFrom != null &&
+                      !day.isBefore(activeFrom) &&
+                      !day.isAfter(lastActivity!.add(const Duration(days: 1)));
 
-                final isToday = day.year == today.year &&
-                    day.month == today.month &&
-                    day.day == today.day;
+                  final isToday = day.year == today.year &&
+                      day.month == today.month &&
+                      day.day == today.day;
 
-                final dayLabel = days[day.weekday - 1];
+                  final dayLabel = days[day.weekday - 1];
 
-                return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: Column(
-                    children: [
-                      // Daire
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isActive
-                              ? AppColors.xpGold
-                              : Colors.white.withOpacity(0.15),
-                          border: isToday && !isActive
-                              ? Border.all(color: Colors.white54, width: 1.5)
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    child: Column(
+                      children: [
+                        // Daire
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isActive
+                                ? AppColors.xpGold
+                                : Colors.white.withOpacity(0.15),
+                            border: isToday && !isActive
+                                ? Border.all(color: Colors.white54, width: 1.5)
+                                : null,
+                          ),
+                          child: isActive
+                              ? const Center(
+                                  child: Icon(Icons.check_rounded,
+                                      color: Colors.white, size: 13),
+                                )
                               : null,
                         ),
-                        child: isActive
-                            ? const Center(
-                                child: Icon(Icons.check_rounded,
-                                    color: Colors.white, size: 13),
-                              )
-                            : null,
-                      ),
-                      Gaps.h(3),
-                      // Gün kısaltması
-                      Text(
-                        dayLabel,
-                        style: TextStyle(
-                          color: isActive ? AppColors.xpGold : Colors.white38,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
+                        Gaps.h(3),
+                        // Gün kısaltması
+                        Text(
+                          dayLabel,
+                          style: TextStyle(
+                            color: isActive ? AppColors.xpGold : Colors.white38,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
             );
           },
         ),

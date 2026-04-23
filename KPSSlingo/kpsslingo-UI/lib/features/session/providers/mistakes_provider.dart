@@ -12,5 +12,5 @@ final mistakesCountProvider = FutureProvider.autoDispose<int>((ref) async {
       .select('id')
       .eq('user_id', user.id);
       
-  return response.length;
+  return (response as List).length;
 });
