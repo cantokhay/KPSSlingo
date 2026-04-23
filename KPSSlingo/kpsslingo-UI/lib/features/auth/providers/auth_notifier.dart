@@ -72,7 +72,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
-        emailRedirectTo: kIsWeb ? null : 'kpsslingo://auth-callback',
+        emailRedirectTo: (kIsWeb && kReleaseMode) ? 'https://kpsslingo.netlify.app/' : (kIsWeb ? null : 'kpsslingo://auth-callback'),
         data: {
           'username': username,
           'target_exam': targetExam,

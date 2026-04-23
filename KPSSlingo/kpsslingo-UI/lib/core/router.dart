@@ -21,8 +21,9 @@ import 'package:kpsslingo/features/session/presentation/topic_quiz_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
-  // NOT watching userProfileProvider here to prevent full router rebuilds.
-  // The redirect logic will read the value when needed.
+  // NOT watching full userProfileProvider here to prevent full router rebuilds on XP/Heart changes.
+  // Instead, we only watch the `onboardingComplete` state so the router re-evaluates when profile loads.
+  final onboardingComplete = ref.watch(userProfileProvider.select((profile) => profile.valueOrNull?.onboardingComplete));
 
   return GoRouter(
     initialLocation: '/home',
@@ -35,10 +36,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Onboarding Kontrolü
       if (isLoggedIn && (state.matchedLocation == '/home' || state.matchedLocation == '/')) {
-        final profile = ref.read(userProfileProvider).valueOrNull;
-        // Eğer profil henüz yüklenmediyse (AsyncLoading), onboarding sayfasına atmak yerine
-        // beklemeyi tercih edebiliriz veya yükleme durumunu kontrol edebiliriz.
-        if (profile != null && !profile.onboardingComplete) {
+        if (onboardingComplete == false) {
           return '/onboarding';
         }
       }
